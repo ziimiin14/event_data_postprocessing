@@ -12,15 +12,15 @@ K_I_arr = np.array(K.I)
 #K= np.matrix([[291.90324780145994, 0., 128.71047242177775], [0., 291.61735408383589, 86.059164015558267],[ 0., 0., 1.]])
 
 #event = np.fromfile('6300ERPM_2000_Events.bin',dtype=np.uint8)
-event = np.fromfile('../2-702/1260ERPM_Events_09102020.bin',dtype=np.uint8)
+event = np.fromfile('../event_data_14102020/6300ERPM_Events_14102020.bin',dtype=np.uint8)
 event = event.reshape(int(event.shape[0]/3),3)
 
 # Starting from second time
 #time_micro = data_load('../test/Rotation/6300ERPM/time_1.npz')
 #time_sec = np.fromfile('6300ERPM_2000_Time.bin',dtype=np.float64)
-time_nano = np.fromfile('../2-702/1260ERPM_Time_09102020.bin',dtype=np.int64)
+time_nano = np.fromfile('../event_data_14102020/6300ERPM_Time_14102020.bin',dtype=np.int64)
 time_nano = time_nano.reshape(int(time_nano.shape[0]),1) 
-time_sec = np.fromfile('../2-702/1260ERPM_Time_09102020.bin',dtype=np.int64)
+time_sec = np.fromfile('../event_data_14102020/6300ERPM_Time_14102020.bin',dtype=np.int64)
 time_sec = time_sec.reshape(int(time_sec.shape[0]),1) 
 time_sec = time_sec/1e9
 time_interval = 1/100
@@ -54,7 +54,7 @@ while(True):
     specific_event = event[prev:current,:]
     specific_time = time_sec[prev:current,:]
     diff_spec_time = specific_time-specific_time[0]
-    diff_deg = diff_spec_time*360
+    diff_deg = diff_spec_time*1800
 
     x_arr = specific_event[:,0]
     y_arr = specific_event[:,1]
