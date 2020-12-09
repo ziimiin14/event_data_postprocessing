@@ -2,17 +2,22 @@ import rosbag
 import numpy as np
 
 #path = 'bag_file/6300ERPM_Max_Events.bag'
-path = '../2-702/1260ERPM_Image_09102020.bag'
+path = '../event_data_14102020/3780ERPM_Image_14102020.bag'
 
 bag = rosbag.Bag(path)
 
-events = []
+img = []
 
 for topic, msg, t in bag.read_messages(topics=['/dvs/image_raw']):
-    events.append(msg)
+    img.append(msg)
 
 
-events_list =[]
+img_list =[]
+time_list = []
+
+for i in range(len(img)):
+    img_list.append(list(img[i].data))
+    time_list.append(img[i].header.stamp.to_nsec()) 
 #init = events[0].events[0].ts.to_nsec()
 
 # for i in range(len(events)):
@@ -21,14 +26,12 @@ events_list =[]
 
 
 
-events_arr = np.array(events_list)
+img_arr = np.array(img_list)
 
-time_arr = events_arr[:,0]
+time_arr = np.array(time_list)
 
-events_arr = events_arr[:,1:]
+img_arr = img_arr.astype(np.uint8)
+print(img_arr.shape,time_arr.shape)
 
-events_arr = events_arr.astype(np.uint8)
-
-
-events_arr.tofile('../2-702/8820ERPM_Events_09102020.bin')
-time_arr.tofile('../2-702/8820ERPM_Time_09102020.bin')
+img_arr.tofile('../event_data_14102020/3780ERPM_Image_14102020.bin')
+time_arr.tofile('../event_data_14102020/3780ERPM_Time_14102020.bin')

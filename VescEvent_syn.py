@@ -1,9 +1,9 @@
 import numpy as np
 
-time_vesc = np.fromfile('../vesc_bin_file/VESC_6300ERPM_Time.bin',dtype=np.float64)
-time_event = np.fromfile('../event_data_14102020/6300ERPM_Time_14102020.bin',dtype=np.int64)
-vesc = np.fromfile('../vesc_bin_file/VESC_6300ERPM_RPM.bin',dtype=np.float64)
-event = np.fromfile('../event_data_14102020/6300ERPM_Events_14102020.bin',dtype=np.uint8)
+time_vesc = np.fromfile('../vesc_bin_file/VESC_1260ERPM_Time.bin',dtype=np.float64)
+time_event = np.fromfile('../event_data_14102020/1260ERPM_Time_14102020.bin',dtype=np.int64)
+vesc = np.fromfile('../vesc_bin_file/VESC_1260ERPM_RPM.bin',dtype=np.float64)
+event = np.fromfile('../event_data_14102020/1260ERPM_Events_14102020.bin',dtype=np.uint8)
 
 
 # time_opti = np.fromfile('data_set1/6300ERPM_Max_Opti_TimeMod.bin',dtype=np.int64)
