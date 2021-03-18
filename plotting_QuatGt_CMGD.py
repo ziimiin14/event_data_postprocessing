@@ -18,8 +18,8 @@ quat = np.fromfile('../dynamic_data_06112020/shape_rotation_groundtruth.bin',dty
 cmgd = np.fromfile('../dynamic_data_06112020/cmgd_all_tg_1.bin',dtype=np.float64)
 
 cmgd = cmgd.reshape(3,int(cmgd.shape[0]/3))
-# quat = quat.reshape(5,int(quat.shape[0]/5))
-quat = quat.reshape(int(quat.shape[0]/5),5)
+# quat = quat.reshape(5,int(quat.shape[0]/5)) # this is for dynamic groundtruth
+quat = quat.reshape(int(quat.shape[0]/5),5) # this is for shape rotation groundtruth
 cmgd = cmgd.T
 # quat = quat.T
 
