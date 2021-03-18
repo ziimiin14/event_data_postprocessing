@@ -2,7 +2,7 @@ import rosbag
 import numpy as np
 
 #path = 'bag_file/6300ERPM_Max_Events.bag'
-path = '../../dynamic_rotation.bag'
+path = '../dynamic_data_06112020/poster_rotation.bag'
 
 bag = rosbag.Bag(path)
 
@@ -29,6 +29,7 @@ events_arr = events_arr[:,1:]
 
 events_arr = events_arr.astype(np.uint8)
 
+print(events_arr.shape,time_arr.shape)
 
-events_arr.tofile('../dynamic_rotation_Event.bin')
-time_arr.tofile('../dynamic_rotation_Time.bin')
+events_arr.tofile('../poster_rotation_Event.bin')
+time_arr.tofile('../poster_rotation_Time.bin')

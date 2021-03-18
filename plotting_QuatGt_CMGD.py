@@ -13,14 +13,15 @@ from pyquaternion import Quaternion
 
 
 # data = np.loadtxt('6300ERPM_2000_Opti_Tf.txt',delimiter=',')
-quat = np.fromfile('../dynamic_data_06112020/dynamic_groundtruth.bin',dtype=np.float64)
+quat = np.fromfile('../dynamic_data_06112020/shape_rotation_groundtruth.bin',dtype=np.float64)
 # cmgd = np.fromfile('../cmgd_all_tg.bin',dtype=np.float64)
 cmgd = np.fromfile('../dynamic_data_06112020/cmgd_all_tg_1.bin',dtype=np.float64)
 
 cmgd = cmgd.reshape(3,int(cmgd.shape[0]/3))
-quat = quat.reshape(5,int(quat.shape[0]/5))
+# quat = quat.reshape(5,int(quat.shape[0]/5))
+quat = quat.reshape(int(quat.shape[0]/5),5)
 cmgd = cmgd.T
-quat = quat.T
+# quat = quat.T
 
 cmgd = cmgd[:-1]
 quat = quat[:-3]
@@ -193,12 +194,12 @@ print(z_max,z_min,y_max,y_min,x_max,x_min)
 # euler_y = euler[:,1]
 # euler_z = euler[:,2]
 
-# plt.plot(quat_time[:],final_angle[:,0],color='orange')
-# plt.plot(quat_time[:],final_angle[:,1],color='r')
-# plt.plot(quat_time[:],final_angle[:,2],color='b')
-plt.plot(quat_time[:-1],angVel_x,color='r')
-plt.plot(quat_time[:-1],angVel_y,color='b')
-plt.plot(quat_time[:-1],angVel_z,color='orange')
+plt.plot(quat_time[:],final_angle[:,0],color='orange')
+plt.plot(quat_time[:],final_angle[:,1],color='r')
+plt.plot(quat_time[:],final_angle[:,2],color='b')
+# plt.plot(quat_time[:-1],angVel_x,color='r')
+# plt.plot(quat_time[:-1],angVel_y,color='b')
+# plt.plot(quat_time[:-1],angVel_z,color='orange')
 # plt.plot(quat_time[:-1],-euler_z_modified)
 # plt.plot(cmgd_time[:-1],cmgd_angle[:,0])
 # plt.plot(cmgd_time[:-1],cmgd_x*180*100/np.pi,color='r')
@@ -210,11 +211,11 @@ plt.plot(quat_time[:-1],angVel_z,color='orange')
 # ax2.plot(quat_time[:-1],angVel_z,color='orange')
 # fig.show()
 
-temp_y = angVel_y[::2]
-error = np.absolute((cmgd_angle[:,1]-temp_y)/temp_y)*100
-# error = np.absolute(cmgd_angle[:,1]-temp_y)
-error_mean=np.sum(error)/error.shape[0]
-print(error_mean)
+# temp_y = angVel_y[::2]
+# error = np.absolute((cmgd_angle[:,1]-temp_y)/temp_y)*100
+# # error = np.absolute(cmgd_angle[:,1]-temp_y)
+# error_mean=np.sum(error)/error.shape[0]
+# print(error_mean)
 
 plt.xlabel('Time(s)')
 plt.ylabel('Euler angles vel(deg/s)')

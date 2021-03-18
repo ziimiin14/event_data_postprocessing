@@ -4,18 +4,26 @@ from scipy.spatial.transform import Rotation as R
 from scipy.ndimage import gaussian_filter1d
 
 # data = np.loadtxt('6300ERPM_2000_Opti_Tf.txt',delimiter=',')
-quat = np.fromfile('../bin_file/3780ERPM_Quat.bin',dtype=np.float64)
-time = np.fromfile('../bin_file/3780ERPM_Time.bin',dtype=np.int64)
+# quat = np.fromfile('../bin_file/3780ERPM_Quat.bin',dtype=np.float64)
+# time = np.fromfile('../bin_file/3780ERPM_Time.bin',dtype=np.int64)
+quat = np.fromfile('kratos_bin_file/kratos_Quat_2_08122020.bin',dtype=np.float64)
+pose = np.fromfile('kratos_bin_file/kratos_Pose_2_08122020.bin',dtype=np.float64)
+time = np.fromfile('kratos_bin_file/kratos_Time_2_08122020.bin',dtype=np.int64)
+
+
 quat = quat.reshape(int(len(quat)/4),4)
+pose = pose.reshape(int(len(pose)/3),3)
+
 time = time.reshape(-1,1)
 time = time/1e9
+time = time-time[0]
 # time = data[:,0]
 # #time = time/1e9
 # quat = data[:,1:5]
 # quat = quat[:-2]
 r = R.from_quat(quat)
-euler = r.as_euler('xyz',degrees=True)
-yaw = euler[:,2]
+euler = r.as_euler('ZYX',degrees=True)
+yaw = euler[:,0]
 #cum_angle = np.cumsum(angle)
 neg = np.where(yaw<0)
 yaw[neg] += 360
@@ -39,6 +47,7 @@ angular_vel = diff_angle/diff_time
 angular_vel_mod = gaussian_filter1d(angular_vel, 5.0)
 
 plt.plot(cum_time,angular_vel,color='red')
+plt.plot(time,pose[:,2]*1000)
 plt.xlabel('Time(s)')
 plt.ylabel('Angular velocity(deg/s)')
 plt.grid()

@@ -29,6 +29,18 @@ def readBin(path,data_type,col):
 
     return data
 
+def readBin1(path,data_type,col):
+    data = np.fromfile(path,dtype=data_type)
+    
+    ## Reading bin file generated from matlab (column wise)
+    # data = data.reshape(col,int(data.shape[0]/col))
+    # data = data.T
+
+    ## Reading bin file generated from python (row wise)
+    data = data.reshape(int(data.shape[0]/col),col)
+
+    return data
+
 def quat_to_euler(quat):
     r = R.from_quat(quat_only)
     # Rotation seq 'ZYX' = 'xyz'
@@ -94,7 +106,7 @@ def compute_error(measured_data,groundtruth_data,N):
  
 quat = readBin('../dynamic_data_06112020/dynamic_groundtruth.bin',np.float64,col=5)
 cmgd = readBin('../dynamic_data_06112020/cmgd_all_mg_11112020.bin',np.float64,col=3)
-imu = readBin('../dynamic_data_06112020/imu.bin',np.float64,col=7)
+imu = readBin('../dynamic_data_06112020/dynamic_imu.bin',np.float64,col=7)
 
 
 # Assign imu ang_vel to g (deg)
@@ -106,6 +118,7 @@ imu_time = imu[:,0]
 # Slicing the array into correct dimension so that cmgd and quat can match each other
 cmgd = cmgd[:-1]
 quat = quat[::2]
+print(cmgd.shape,quat.shape)
 
 # Assign specific terms
 quat_only = quat[:,1:]
@@ -147,39 +160,46 @@ temp_x = gaussian_filter1d(angVel_body[:-1,0],1.5)
 temp_y = gaussian_filter1d(angVel_body[:-1,1],1.5)
 temp_z = gaussian_filter1d(angVel_body[:-1,2],1.5)
 
-n  = temp_x.shape[0]//4
-n_range = np.arange(0,temp_x.shape[0],n)
-# n_range[-1] = n_range[-1]+2
+# n  = temp_x.shape[0]//4
+# n_range = np.arange(0,temp_x.shape[0],n)
+# # n_range[-1] = n_range[-1]+2
 
-for i in range(n_range.shape[0]-1):
-    prev = n_range[i]
-    curr = n_range[i+1]
+# for i in range(n_range.shape[0]-1):
+#     prev = n_range[i]
+#     curr = n_range[i+1]
 
-    err_x = compute_error(cmgd_angVel[prev:curr,2],temp_x[prev:curr],n)
-    err_y = compute_error(cmgd_angVel[prev:curr,1],temp_y[prev:curr],n)
-    err_z = compute_error(cmgd_angVel[prev:curr,0],temp_z[prev:curr],n)
+#     err_x = compute_error(cmgd_angVel[prev:curr,2],temp_x[prev:curr],n)
+#     err_y = compute_error(cmgd_angVel[prev:curr,1],temp_y[prev:curr],n)
+#     err_z = compute_error(cmgd_angVel[prev:curr,0],temp_z[prev:curr],n)
 
 
 
-    print(err_x,err_y,err_z)
-    # print(max(temp_x),max(temp_y),max(temp_z))
-# print(err_y)
-print(cmgd_time.shape,cmgd_time[0],cmgd_time[-4])
+#     print(err_x,err_y,err_z)
+#     # print(max(temp_x),max(temp_y),max(temp_z))
+# # print(err_y)
+print(cmgd_time[0],cmgd_time[-4])
+print(cmgd_angVel.shape,temp_x.shape)
 
 
 
 #Plotting
-plt.plot(cmgd_time[:-2],cmgd_angVel[:,2],'--',color='r')
-plt.plot(cmgd_time[:-2],cmgd_angVel[:,1],'--',color='b')
-plt.plot(cmgd_time[:-2],cmgd_angVel[:,0],'--',color='orange')
+# plt.plot(cmgd_time[:-5],cmgd_angVel[:,2],'--',color='r')
+# plt.plot(cmgd_time[:-5],cmgd_angVel[:,1],'--',color='b')
+# plt.plot(cmgd_time[:-5],cmgd_angVel[:,0],'--',color='orange')
+
 
 plt.plot(cmgd_time[:-2],temp_x,color='r')
 plt.plot(cmgd_time[:-2],temp_y,color='b')
 plt.plot(cmgd_time[:-2],temp_z,color='orange')
 
-# plt.plot(cmgd_time[:-2],cmgd[:,0]*180*100/np.pi)
-# plt.plot(cmgd_time[:-2],cmgd[:,1]*180*100/np.pi)
-# plt.plot(cmgd_time[:-2],cmgd[:,2]*180*100/np.pi)
+
+# plt.plot(quat_time[:-2],temp_x,color='r')
+# plt.plot(quat_time[:-2],temp_y,color='b')
+# plt.plot(quat_time[:-2],temp_z,color='orange')
+
+plt.plot(cmgd_time[:-2],cmgd[:,0]*180*100/np.pi)
+plt.plot(cmgd_time[:-2],cmgd[:,1]*180*100/np.pi)
+plt.plot(cmgd_time[:-2],cmgd[:,2]*180*100/np.pi)
 
 
 # plt.ylim(-200,200)
