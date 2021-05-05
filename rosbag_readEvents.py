@@ -1,35 +1,37 @@
 import rosbag
 import numpy as np
-
-#path = 'bag_file/6300ERPM_Max_Events.bag'
-path = '../dynamic_data_06112020/poster_rotation.bag'
-
-bag = rosbag.Bag(path)
-
-events = []
-
-for topic, msg, t in bag.read_messages(topics=['/dvs/events']):
-    events.append(msg)
+import argparse
+import os
 
 
-events_list =[]
-init = events[0].events[0].ts.to_nsec()
-
-for i in range(len(events)):
-    for j in range(len(events[i].events)):
-        events_list.append([events[i].events[j].ts.to_nsec(), events[i].events[j].x,events[i].events[j].y,int(events[i].events[j].polarity)])
+if __name__ == "__main__":
 
 
+    parser = argparse.ArgumentParser()
+    parser.add_argument("bag",help = "ROS bag file to extract")
+    parser.add_argument("--time_output_file",default="time_extracted_data",help="binary file to extract the time data")
+    parser.add_argument("--event_output_file",default="event_extracted_data",help="binary file to extract the event data")
+    args = parser.parse_args()
 
-events_arr = np.array(events_list)
+    path = args.bag
+    bag = rosbag.Bag(path)
 
-time_arr = events_arr[:,0]
+    output_filename = open(args.time_output_file,'wb')
+    output_filename1 = open(args.event_output_file,'wb')
 
-events_arr = events_arr[:,1:]
+    count = 0 
 
-events_arr = events_arr.astype(np.uint8)
+    for topic, msg, t in bag.read_messages(topics=['/dvs/events']):
+        for e in msg.events:
+            data = np.array([e.ts.to_nsec()/1e9])
+            data1 = np.array([int(e.x),int(e.y),int(e.polarity)],dtype=np.uint8)
+            data.tofile(output_filename)
+            data1.tofile(output_filename1)
+            
+        count += 1
+        print(count)
 
-print(events_arr.shape,time_arr.shape)
+    output_filename.close()
+    output_filename1.close()
 
-events_arr.tofile('../poster_rotation_Event.bin')
-time_arr.tofile('../poster_rotation_Time.bin')
+
