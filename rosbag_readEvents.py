@@ -23,7 +23,7 @@ if __name__ == "__main__":
 
     for topic, msg, t in bag.read_messages(topics=['/dvs/events']):
         for e in msg.events:
-            data = np.array([e.ts.to_nsec()/1e9])
+            data = np.array([e.ts.to_nsec()/1e9]) # float64
             data1 = np.array([int(e.x),int(e.y),int(e.polarity)],dtype=np.uint8)
             data.tofile(output_filename)
             data1.tofile(output_filename1)

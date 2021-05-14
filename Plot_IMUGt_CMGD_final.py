@@ -104,9 +104,9 @@ def compute_error(measured_data,groundtruth_data,N):
 
 # if __name__ == "__main__":
  
-quat = readBin('../dynamic_data_06112020/dynamic_groundtruth.bin',np.float64,col=5)
-cmgd = readBin('../dynamic_data_06112020/cmgd_all_mg_11112020.bin',np.float64,col=3)
-imu = readBin('../dynamic_data_06112020/dynamic_imu.bin',np.float64,col=7)
+quat = readBin('../../dynamic_data_06112020/dynamic_groundtruth.bin',np.float64,col=5)
+cmgd = readBin('../../dynamic_data_06112020/cmgd_all_mg_11112020.bin',np.float64,col=3)
+imu = readBin('../../dynamic_data_06112020/dynamic_imu.bin',np.float64,col=7)
 
 
 # Assign imu ang_vel to g (deg)

@@ -13,15 +13,15 @@ from pyquaternion import Quaternion
 
 
 # data = np.loadtxt('6300ERPM_2000_Opti_Tf.txt',delimiter=',')
-quat = np.fromfile('../dynamic_data_06112020/shape_rotation_groundtruth.bin',dtype=np.float64)
+quat = np.fromfile('../../dynamic_data_06112020/dynamic_groundtruth.bin',dtype=np.float64)
 # cmgd = np.fromfile('../cmgd_all_tg.bin',dtype=np.float64)
-cmgd = np.fromfile('../dynamic_data_06112020/cmgd_all_tg_1.bin',dtype=np.float64)
+cmgd = np.fromfile('../../dynamic_data_06112020/cmgd_all_tg_1.bin',dtype=np.float64)
 
 cmgd = cmgd.reshape(3,int(cmgd.shape[0]/3))
-# quat = quat.reshape(5,int(quat.shape[0]/5)) # this is for dynamic groundtruth
-quat = quat.reshape(int(quat.shape[0]/5),5) # this is for shape rotation groundtruth
+quat = quat.reshape(5,int(quat.shape[0]/5)) # this is for dynamic groundtruth
+# quat = quat.reshape(int(quat.shape[0]/5),5) # this is for shape rotation groundtruth
 cmgd = cmgd.T
-# quat = quat.T
+quat = quat.T
 
 cmgd = cmgd[:-1]
 quat = quat[:-3]
@@ -84,6 +84,7 @@ first_quat_conj = Quaternion(quat_conj[0,:])
 first_quat = Quaternion(quat_only[0,:])
 
 final_quat= []
+
 
 for i in range(quat_conj.shape[0]):
     temp = first_quat_conj*Quaternion(quat_only[i,:])

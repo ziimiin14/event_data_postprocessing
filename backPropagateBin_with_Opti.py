@@ -1,56 +1,45 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from mpl_toolkits import mplot3d
 from scipy.spatial.transform import Rotation as R
+from pyquaternion import Quaternion
 import cv2
 
-
-def gauss3sigma(events):
-# expects events in (n,2) format
-# where events(1,2) -> (x,y) in pixels
-
-    event_round = np.rint(events)
-    event_round = event_round.astype(np.uint8)
-    event_image = np.zeros((180,240))
-    for i in range(events.shape[0]):
-        hor = event_round[i][0]
-        ver = event_round[i][1]
-        if hor < 240 and ver>=0 and ver < 180 and ver>=0:
-            X,Y = np.meshgrid(np.arange(max(hor-3,0), min(hor+4,239)),np.arange(max(ver-3,0), min(ver+4,179)))
-            exponent = ((X-hor)**2 + (Y-ver)**2)/2
-            amplitude = 1/ (np.sqrt(2*np.pi))
-            val = amplitude* np.exp(-exponent)
-            event_image[Y.min():Y.max()+1,X.min():X.max()+1] += val
-            #event_image[Y.min().astype(int):Y.max().astype(int)+1,X.min().astype(int):X.max().astype(int)+1] += val
-
-    contrast = -np.var(event_image)
-
-    return contrast,event_image
     
-
-K= np.matrix([[329.81456747559736, 0., 119.46793030265114], [0., 329.80049922231348, 80.956489477048663],[ 0., 0., 1.]])
+# Initialize K matrix
+K= np.matrix([[330.1570953377, 0., 161.9624665569], [0., 329.536232838, 110.80414596744],[ 0., 0., 1.]])
 K_arr = np.array(K)
 K_I_arr = np.array(K.I)
-#K= np.matrix([[291.90324780145994, 0., 128.71047242177775], [0., 291.61735408383589, 86.059164015558267],[ 0., 0., 1.]])
 
-#event = np.fromfile('data_set1_sync/6300ERPM_Max_EventMod.bin',dtype=np.uint8)
-event = np.fromfile('../6300ERPM_Events_02102020.bin',dtype=np.uint8)
-event = event.reshape(int(event.shape[0]/3),3)
+# Load events data from bin file
+event = np.fromfile('../event_data_05122021/bin_file/kratos_eventOnly_05122021_4.bin',dtype=np.uint8)
+event = event.reshape(-1,3)
 
-# Starting from second time
-#time_micro = data_load('../test/Rotation/6300ERPM/time_1.npz')
-#time_sec = np.fromfile('data_set1_sync/6300ERPM_Max_TimeMod.bin',dtype=np.int64)
-time_sec = np.fromfile('../6300ERPM_Time_02102020.bin',dtype=np.int64)
-time_sec = time_sec.reshape(int(time_sec.shape[0]),1) 
-time_sec = time_sec/1e9
-time_interval = 1/180
+# Load time data (event) from bin file
+time_sec = np.fromfile('../event_data_05122021/bin_file/kratos_eventTime_05122021_4.bin',dtype=np.float64)
+time_sec = time_sec.reshape(-1,1) 
+time_interval = 1/150
 
-time_init = time_sec[0,:]
-time_end = time_sec[-1,:]
-time_range = np.arange(time_init,time_end+time_interval,time_interval)
+# Load opti track data
+opti = np.fromfile('../event_data_05122021/bin_file/kratos_quat_05122021_4.bin',dtype=np.float64)
+opti = opti.reshape(-1,5)
+opti_time = opti[:,0]
+opti_time = opti_time.reshape(-1,1)
+opti_quat = opti[:,1:]
+
+
+# Find the start time and end time for opti track data to sync with event data time
+findFirst = np.where(opti_time[:,0]<time_sec[0,0])[0][-1] 
+findLast = np.where(opti_time[:,0]>time_sec[-1,0])[0][0]
+
+# Construct time histogram with respect to the opti_time (findFirst and findLast)
+time_init = opti_time[findFirst,:]
+time_end = opti_time[findLast,:]
+time_range = np.arange(time_init,time_end,time_interval)
 time_hist,time_binEdge = np.histogram(time_sec,bins=time_range)
 time_hist_cum = np.cumsum(time_hist)
 
+
+# User input
 max_frame= time_hist.shape[0]
 user_input = input('Please choose the specific frame from 0 - '+str(max_frame-1)+': ')
 user_input = int(user_input)
@@ -63,24 +52,25 @@ else:
     prev = time_hist_cum[i-1]
 
 
-#Load opti track data
-opti_quat = np.fromfile('data_set1_sync/6300ERPM_Max_Opti_QuatMod.bin',dtype=np.float64)
-opti_quat = opti_quat.reshape(int(opti_quat.shape[0]/4),4)
-opti_time = np.fromfile('data_set1_sync/6300ERPM_Max_Opti_TimeMod.bin',dtype=np.int64)
-opti_time = opti_time.reshape(int(opti_time.shape[0]),1)
-opti_time = opti_time/1e9
-r = R.from_quat(opti_quat)
-rotvec = r.as_rotvec()
-temp = rotvec[:,1].copy()
-rotvec[:,1] = rotvec[:,2]
-rotvec[:,2] = temp
-rotvec[:,0] = 0
-rotvec[:,2] = 0
-rotvec[:,1] += np.pi
-#rotvec[:,1] -= rotvec[0,1]
-#r1 = R.from_rotvec(rotvec)
-#dcm = r1.as_dcm()
 
+# Compute rotation relative to the first frame
+quat = np.roll(opti_quat,1,axis=1)
+first_quat = Quaternion(quat[0,:])
+first_quat_conj = first_quat.conjugate
+quat_rel = []
+
+for i in range(quat.shape[0]-1):
+    temp = Quaternion(quat[i,:]).conjugate * Quaternion(quat[i+1,:])
+    quat_rel.append([temp[1],temp[2],temp[3],temp[0]])
+
+
+
+quat_n1 = np.array(quat_n1)
+r = R.from_quat(quat_n1)
+euler = r.as_euler('ZYX',degrees=True)
+
+
+r = R.from_quat(opti_quat)
 
 
 while(True):
