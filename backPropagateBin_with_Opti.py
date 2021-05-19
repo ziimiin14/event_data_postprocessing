@@ -17,7 +17,7 @@ event = event.reshape(-1,3)
 # Load time data (event) from bin file
 time_sec = np.fromfile('../event_data_05122021/bin_file/kratos_eventTime_05122021_4.bin',dtype=np.float64)
 time_sec = time_sec.reshape(-1,1) 
-time_interval = 1/150
+time_interval = 1/1000
 
 # Load opti track data
 opti = np.fromfile('../event_data_05122021/bin_file/kratos_quat_05122021_4.bin',dtype=np.float64)
@@ -29,7 +29,7 @@ opti_quat = opti[:,1:]
 
 # Find the start time and end time for opti track data to sync with event data time
 findFirst = np.where(opti_time[:,0]<time_sec[0,0])[0][-1] 
-findLast = np.where(opti_time[:,0]>time_sec[-1,0])[0][0]
+findLast = np.where(opti_time[:,0]>time_sec[-1,0])[0][0]+1
 
 # Construct time histogram with respect to the opti_time (findFirst and findLast)
 time_init = opti_time[findFirst,:]
@@ -37,6 +37,34 @@ time_end = opti_time[findLast,:]
 time_range = np.arange(time_init,time_end,time_interval)
 time_hist,time_binEdge = np.histogram(time_sec,bins=time_range)
 time_hist_cum = np.cumsum(time_hist)
+
+# Compute rotation relative to the first frame
+# opti_quat = opti_quat[findFirst:findLast,:]
+quat = np.roll(opti_quat,1,axis=1)
+first_quat = Quaternion(quat[0,:])
+first_quat_conj = first_quat.conjugate
+quat_rel = []
+quat_world = []
+
+# Rotation from previous point to next point
+# for i in range(quat.shape[0]-1):
+#     temp = Quaternion(quat[i+1,:])*Quaternion(quat[i,:]).conjugate 
+#     quat_rel.append([temp[1],temp[2],temp[3],temp[0]])
+
+# Rotation from first frame to ith frame
+# for i in range(quat.shape[0]):
+#     temp = Quaternion(quat[i,:])*first_quat_conj
+#     quat_rel.append([temp[1],temp[2],temp[3],temp[0]])
+
+for i in range(quat.shape[0]):
+    quat_world.append(Quaternion(quat[i,:]))
+
+
+# quat_rel = np.array(quat_rel)
+# r = R.from_quat(quat_rel)
+# dcm = r.as_dcm()
+# dcm_T = np.einsum('abc->acb',dcm)
+# euler = r.as_euler('ZYX',degrees=True)
 
 
 # User input
@@ -52,73 +80,69 @@ else:
     prev = time_hist_cum[i-1]
 
 
-
-# Compute rotation relative to the first frame
-quat = np.roll(opti_quat,1,axis=1)
-first_quat = Quaternion(quat[0,:])
-first_quat_conj = first_quat.conjugate
-quat_rel = []
-
-for i in range(quat.shape[0]-1):
-    temp = Quaternion(quat[i,:]).conjugate * Quaternion(quat[i+1,:])
-    quat_rel.append([temp[1],temp[2],temp[3],temp[0]])
-
-
-
-quat_n1 = np.array(quat_n1)
-r = R.from_quat(quat_n1)
-euler = r.as_euler('ZYX',degrees=True)
-
-
-r = R.from_quat(opti_quat)
-
-
 while(True):
-    temp = time_binEdge[i]
-    temp1 = time_binEdge[i+1]
-    prev_1,current_1 = np.where((opti_time<=temp))[0][-1],np.where((opti_time>=temp1))[0][0]
-    a = opti_time[prev_1]
-    b = opti_time[current_1]
-    c = [a.item(),b.item()]
-    e = rotvec[prev_1,1]-rotvec[prev_1,1]
-    f = abs(rotvec[current_1,1]-rotvec[prev_1,1])
-    d = [e,-f if f<1 else (f-2*np.pi)]
-    x = time_sec[prev:current]
-    rotvec_interp = np.interp(x,c,d)
-    rotvec_interp -= rotvec_interp[0,0]
-    diff_rot=np.zeros((rotvec_interp.shape[0],3))
-    diff_rot[:,1] = rotvec_interp[:,0]
-    #print(diff_rot)
-
+    ## For each frame:
+    # Declare a specific_event and specific_time for specific frame requested
+    print('error')
     specific_event = event[prev:current,:]
-    print(specific_event.shape)
     specific_time = time_sec[prev:current,:]
-    diff_spec_time = specific_time-specific_time[0]
-    #diff_deg = diff_spec_time*1800
 
+    # Find the initial opti time index(temp_init) that is lesser than first specific time and
+    # last opti time index(temp_last) that is more that last specific time
+    temp_init = np.where(opti_time[:,0]<=specific_time[0,0])[0][-1]
+    temp_last = np.where(opti_time[:,0]>=specific_time[-1,0])[0][0]
+
+    # Define the rotation ratio 
+    diff_time_numerator = specific_time-opti_time[temp_init,0]
+    diff_time_denominator = opti_time[temp_last,0]-opti_time[temp_init,0]
+    ratio = diff_time_numerator/diff_time_denominator
+
+    # Declare the quaternions with respect to the initial and last opti time index
+    q1 = quat_world[temp_init]
+    q2 = quat_world[temp_last]
+
+    # Rotate (q1.conjugate) from world frame to initial frame first and then apply rotation(q2) to the point
+    q3 = q2*q1.conjugate
+
+    # Convert quaternion to euler with the sequence of ZYX
+    q = np.array([q3[1],q3[2],q3[3],q3[0]])
+    r = R.from_quat(q)
+    euler = r.as_euler('ZYX',degrees=True)
+    euler = euler.reshape(1,-1)
+
+    # Compute euler with rotation ratio
+    # to obtain euler_arr (rotation with respect to each specific event time frame))
+    euler_arr = np.dot(ratio,euler)
+    # euler_arr[:,0],euler_arr[:,1] = euler_arr[:,1],euler_arr[:,0]
+
+    # Convert the euler arr to dcm
+    r1 = R.from_euler('ZYX',euler_arr,degrees=True)
+    dcm = r1.as_dcm()
+    dcm_T = np.einsum('iab->iba',dcm)
+
+    # Compute a 3 by N dimension array with respect to the specific events
     x_arr = specific_event[:,0]
     y_arr = specific_event[:,1]
     z_arr = np.ones(specific_event.shape[0],dtype=np.uint8)
+    specific_pos_pixel = np.reshape((x_arr,y_arr,z_arr),(3,-1)) # Points in pixel frame
 
-    specific_pos_pixel = np.reshape((x_arr,y_arr,z_arr),(3,specific_event.shape[0]))
-    specific_pos_world = K_I_arr.dot(specific_pos_pixel)
+    # Compute points in camera frame
+    specific_pos_camera = K_I_arr@specific_pos_pixel
+    print(dcm_T.shape,specific_pos_camera.shape)
 
-    #diff_rot = diff_deg*np.array([0,-1,0])
-    r = R.from_euler('xyz',diff_rot)
-    dcm = r.as_dcm()
+    # Back propagate points in camera frame
+    BxC = np.einsum('iab,bi->ib',dcm_T,specific_pos_camera)
 
-    specific_pos_world = specific_pos_world.reshape(3,specific_event.shape[0],1)
-    BxC = np.einsum('iab,bid->iad',dcm,specific_pos_world)
-
-    final_pos_pixel = np.einsum('ab,ibd->ia',K_arr,BxC)
+    final_pos_pixel = K_arr@BxC.T
+    final_pos_pixel = final_pos_pixel.T
     final_pos_pixel[:,0], final_pos_pixel[:,1],final_pos_pixel[:,2]=final_pos_pixel[:,0]/final_pos_pixel[:,2],final_pos_pixel[:,1]/final_pos_pixel[:,2],final_pos_pixel[:,2]/final_pos_pixel[:,2]
     final_pos_pixel = np.round(final_pos_pixel)
     final_pos_pixel = final_pos_pixel.astype(int)
     final_pos_pixel[:,2] = event[prev:current,2]
     # con,img = gauss3sigma(final_pos_pixel[:,:2])
 
-    width =240
-    height=180
+    width =320
+    height=240
 
     black_img_1  = np.zeros((height,width,3),dtype =np.uint8)
     black_img  = np.zeros((height,width,3),dtype =np.uint8)
@@ -126,8 +150,8 @@ while(True):
     current_event = final_pos_pixel
     ones_1 = np.where(current_event_1[:,2]==1)
     zeros_1 = np.where(current_event_1[:,2]==0)
-    zeros=np.where((current_event[:,2]==0) & (current_event[:,0]<240) & (current_event[:,1]<180) & (current_event[:,1]>=0) & (current_event[:,0]>=0))
-    ones=np.where((current_event[:,2]==1) & (current_event[:,0]<240) & (current_event[:,1]<180) & (current_event[:,1]>=0) & (current_event[:,0]>=0))
+    zeros=np.where((current_event[:,2]==0) & (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0))
+    ones=np.where((current_event[:,2]==1) & (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0))
     black_img_1[current_event_1[ones_1][:,1],current_event_1[ones_1][:,0],:] = [255,0,0]
     black_img_1[current_event_1[zeros_1][:,1],current_event_1[zeros_1][:,0],:] = [0,0,255]
     black_img[current_event[ones][:,1],current_event[ones][:,0],:] = [255,0,0]
@@ -147,9 +171,10 @@ while(True):
     # plt.imshow(img)
     # plt.show()
 
-    k = cv2.waitKey(10000)
+    k = cv2.waitKey(5000)
 
     if k == ord('c'):
+        print('error')
         i += 1
         prev,current = time_hist_cum[i-1], time_hist_cum[i]
         continue
