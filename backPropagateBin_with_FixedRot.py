@@ -54,26 +54,34 @@ while(True):
     specific_event = event[prev:current,:]
     specific_time = time_sec[prev:current,:]
     diff_spec_time = specific_time-specific_time[0]
-    diff_deg = diff_spec_time*0
+    diff_deg = diff_spec_time*2520
 
     x_arr = specific_event[:,0]
     y_arr = specific_event[:,1]
     z_arr = np.ones(specific_event.shape[0],dtype=np.uint8)
 
     specific_pos_pixel = np.reshape((x_arr,y_arr,z_arr),(3,specific_event.shape[0]))
-    specific_pos_world = np.matmul(K.I,specific_pos_pixel)
+    # specific_pos_world = np.matmul(K.I,specific_pos_pixel)
+    specific_pos_world = K_I_arr@specific_pos_pixel
 
     diff_rot = diff_deg*np.array([0,-1,0])
-    r = R.from_euler('xyz',diff_rot,degrees=True)
+    r = R.from_euler('ZYX',diff_rot,degrees=True)
     dcm = r.as_dcm()
 
-    specific_pos_world = np.array(specific_pos_world)
-    specific_pos_world = specific_pos_world.T
-    specific_pos_world = np.reshape(specific_pos_world,(specific_event.shape[0],3,1))
-    BxC = np.matmul(dcm,specific_pos_world)
+    # specific_pos_world = np.array(specific_pos_world)
+    # specific_pos_world = specific_pos_world.T
+    # specific_pos_world = np.reshape(specific_pos_world,(specific_event.shape[0],3,1))
+    # BxC = np.matmul(dcm,specific_pos_world)
+    BxC = np.einsum('iab,bi->ai',dcm,specific_pos_world)
     
-    final_pos_pixel = np.matmul(K,BxC)
-    final_pos_pixel = np.array(final_pos_pixel)
+    # final_pos_pixel = np.matmul(K,BxC)
+    # final_pos_pixel = np.array(final_pos_pixel)
+    # final_pos_pixel[:,0], final_pos_pixel[:,1],final_pos_pixel[:,2]=final_pos_pixel[:,0]/final_pos_pixel[:,2],final_pos_pixel[:,1]/final_pos_pixel[:,2],final_pos_pixel[:,2]/final_pos_pixel[:,2]
+    # final_pos_pixel = np.round(final_pos_pixel)
+    # final_pos_pixel = final_pos_pixel.astype(int)
+    # final_pos_pixel[:,2] = event[prev:current,2]
+    final_pos_pixel = K_arr@BxC
+    final_pos_pixel = final_pos_pixel.T
     final_pos_pixel[:,0], final_pos_pixel[:,1],final_pos_pixel[:,2]=final_pos_pixel[:,0]/final_pos_pixel[:,2],final_pos_pixel[:,1]/final_pos_pixel[:,2],final_pos_pixel[:,2]/final_pos_pixel[:,2]
     final_pos_pixel = np.round(final_pos_pixel)
     final_pos_pixel = final_pos_pixel.astype(int)

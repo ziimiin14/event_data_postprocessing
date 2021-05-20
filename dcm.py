@@ -52,8 +52,6 @@ RR1 = Rz(z1)@Ry(y1)@Rx(x1)
 RR2 = Rz(z2)@Ry(y2)@Rx(x2)
 RR3 = Rz(z3)@Ry(y3)@Rx(x3) 
 RRR_p = RR2@RR1
-# print(RR3@RR1.T)
-# print(RR2)
 print(RRR_p)
 # Check whether the point rotation is correct
 print((RRR_p-RR3) < 0.0000000001)

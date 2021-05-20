@@ -11,13 +11,13 @@ K_arr = np.array(K)
 K_I_arr = np.array(K.I)
 
 # Load events data from bin file
-event = np.fromfile('../event_data_05122021/bin_file/kratos_eventOnly_05122021_4.bin',dtype=np.uint8)
+event = np.fromfile('../event_data_05122021/bin_file/kratos_eventOnly_05122021_4.bin',dtype=np.uint16)
 event = event.reshape(-1,3)
 
 # Load time data (event) from bin file
 time_sec = np.fromfile('../event_data_05122021/bin_file/kratos_eventTime_05122021_4.bin',dtype=np.float64)
 time_sec = time_sec.reshape(-1,1) 
-time_interval = 1/1000
+time_interval = 1/100
 
 # Load opti track data
 opti = np.fromfile('../event_data_05122021/bin_file/kratos_quat_05122021_4.bin',dtype=np.float64)
@@ -82,8 +82,8 @@ else:
 
 while(True):
     ## For each frame:
+    print(i)
     # Declare a specific_event and specific_time for specific frame requested
-    print('error')
     specific_event = event[prev:current,:]
     specific_time = time_sec[prev:current,:]
 
@@ -91,6 +91,7 @@ while(True):
     # last opti time index(temp_last) that is more that last specific time
     temp_init = np.where(opti_time[:,0]<=specific_time[0,0])[0][-1]
     temp_last = np.where(opti_time[:,0]>=specific_time[-1,0])[0][0]
+    print(temp_init,temp_last)
 
     # Define the rotation ratio 
     diff_time_numerator = specific_time-opti_time[temp_init,0]
@@ -109,11 +110,20 @@ while(True):
     r = R.from_quat(q)
     euler = r.as_euler('ZYX',degrees=True)
     euler = euler.reshape(1,-1)
+    print(euler)
+    print(ratio)
 
     # Compute euler with rotation ratio
     # to obtain euler_arr (rotation with respect to each specific event time frame))
     euler_arr = np.dot(ratio,euler)
-    # euler_arr[:,0],euler_arr[:,1] = euler_arr[:,1],euler_arr[:,0]
+    # print(euler_arr)
+    euler_arr[:,1] = euler_arr[:,0]
+    # print(euler_arr)
+    euler_arr[:,0] = 0
+    euler_arr[:,2] = 0
+    euler_arr = euler_arr-euler_arr[0,:]
+
+    print(euler_arr)
 
     # Convert the euler arr to dcm
     r1 = R.from_euler('ZYX',euler_arr,degrees=True)
@@ -123,17 +133,17 @@ while(True):
     # Compute a 3 by N dimension array with respect to the specific events
     x_arr = specific_event[:,0]
     y_arr = specific_event[:,1]
-    z_arr = np.ones(specific_event.shape[0],dtype=np.uint8)
+    z_arr = np.ones(specific_event.shape[0],dtype=np.uint16)
     specific_pos_pixel = np.reshape((x_arr,y_arr,z_arr),(3,-1)) # Points in pixel frame
 
     # Compute points in camera frame
     specific_pos_camera = K_I_arr@specific_pos_pixel
-    print(dcm_T.shape,specific_pos_camera.shape)
+    # print(dcm_T.shape,specific_pos_camera.shape)
 
     # Back propagate points in camera frame
-    BxC = np.einsum('iab,bi->ib',dcm_T,specific_pos_camera)
+    BxC = np.einsum('iab,bi->ai',dcm_T,specific_pos_camera)
 
-    final_pos_pixel = K_arr@BxC.T
+    final_pos_pixel = K_arr@BxC
     final_pos_pixel = final_pos_pixel.T
     final_pos_pixel[:,0], final_pos_pixel[:,1],final_pos_pixel[:,2]=final_pos_pixel[:,0]/final_pos_pixel[:,2],final_pos_pixel[:,1]/final_pos_pixel[:,2],final_pos_pixel[:,2]/final_pos_pixel[:,2]
     final_pos_pixel = np.round(final_pos_pixel)
@@ -174,7 +184,6 @@ while(True):
     k = cv2.waitKey(5000)
 
     if k == ord('c'):
-        print('error')
         i += 1
         prev,current = time_hist_cum[i-1], time_hist_cum[i]
         continue
