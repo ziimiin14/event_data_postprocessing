@@ -17,7 +17,7 @@ event = event.reshape(-1,3)
 # Load time data (event) from bin file
 time_sec = np.fromfile('../event_data_05122021/bin_file/kratos_eventTime_05122021_4.bin',dtype=np.float64)
 time_sec = time_sec.reshape(-1,1) 
-time_interval = 1/100
+time_interval = 1/250
 
 # Load opti track data
 opti = np.fromfile('../event_data_05122021/bin_file/kratos_quat_05122021_4.bin',dtype=np.float64)
@@ -41,30 +41,11 @@ time_hist_cum = np.cumsum(time_hist)
 # Compute rotation relative to the first frame
 # opti_quat = opti_quat[findFirst:findLast,:]
 quat = np.roll(opti_quat,1,axis=1)
-first_quat = Quaternion(quat[0,:])
-first_quat_conj = first_quat.conjugate
-quat_rel = []
 quat_world = []
 
-# Rotation from previous point to next point
-# for i in range(quat.shape[0]-1):
-#     temp = Quaternion(quat[i+1,:])*Quaternion(quat[i,:]).conjugate 
-#     quat_rel.append([temp[1],temp[2],temp[3],temp[0]])
-
-# Rotation from first frame to ith frame
-# for i in range(quat.shape[0]):
-#     temp = Quaternion(quat[i,:])*first_quat_conj
-#     quat_rel.append([temp[1],temp[2],temp[3],temp[0]])
 
 for i in range(quat.shape[0]):
     quat_world.append(Quaternion(quat[i,:]))
-
-
-# quat_rel = np.array(quat_rel)
-# r = R.from_quat(quat_rel)
-# dcm = r.as_dcm()
-# dcm_T = np.einsum('abc->acb',dcm)
-# euler = r.as_euler('ZYX',degrees=True)
 
 
 # User input
@@ -82,7 +63,6 @@ else:
 
 while(True):
     ## For each frame:
-    print(i)
     # Declare a specific_event and specific_time for specific frame requested
     specific_event = event[prev:current,:]
     specific_time = time_sec[prev:current,:]
@@ -91,7 +71,6 @@ while(True):
     # last opti time index(temp_last) that is more that last specific time
     temp_init = np.where(opti_time[:,0]<=specific_time[0,0])[0][-1]
     temp_last = np.where(opti_time[:,0]>=specific_time[-1,0])[0][0]
-    print(temp_init,temp_last)
 
     # Define the rotation ratio 
     diff_time_numerator = specific_time-opti_time[temp_init,0]
@@ -103,27 +82,23 @@ while(True):
     q2 = quat_world[temp_last]
 
     # Rotate (q1.conjugate) from world frame to initial frame first and then apply rotation(q2) to the point
-    q3 = q2*q1.conjugate
+    q3 = q1.conjugate*q2
+    # q3 = q2*q1.conjugate
 
     # Convert quaternion to euler with the sequence of ZYX
     q = np.array([q3[1],q3[2],q3[3],q3[0]])
     r = R.from_quat(q)
     euler = r.as_euler('ZYX',degrees=True)
     euler = euler.reshape(1,-1)
-    print(euler)
-    print(ratio)
 
     # Compute euler with rotation ratio
     # to obtain euler_arr (rotation with respect to each specific event time frame))
     euler_arr = np.dot(ratio,euler)
-    # print(euler_arr)
+    temp = -euler_arr[:,1].copy()
     euler_arr[:,1] = euler_arr[:,0]
-    # print(euler_arr)
-    euler_arr[:,0] = 0
-    euler_arr[:,2] = 0
+    euler_arr[:,0] = euler_arr[:,2]
+    euler_arr[:,2] = temp
     euler_arr = euler_arr-euler_arr[0,:]
-
-    print(euler_arr)
 
     # Convert the euler arr to dcm
     r1 = R.from_euler('ZYX',euler_arr,degrees=True)
@@ -154,26 +129,46 @@ while(True):
     width =320
     height=240
 
-    black_img_1  = np.zeros((height,width,3),dtype =np.uint8)
-    black_img  = np.zeros((height,width,3),dtype =np.uint8)
-    current_event_1 = event[prev:current,:]
+    black_img_1  = np.zeros((height,width),dtype =np.uint8)
+    black_img  = np.zeros((height,width),dtype =np.uint8)
+    current_event_1 = event[prev:current,:].copy()
     current_event = final_pos_pixel
-    ones_1 = np.where(current_event_1[:,2]==1)
-    zeros_1 = np.where(current_event_1[:,2]==0)
-    zeros=np.where((current_event[:,2]==0) & (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0))
-    ones=np.where((current_event[:,2]==1) & (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0))
-    black_img_1[current_event_1[ones_1][:,1],current_event_1[ones_1][:,0],:] = [255,0,0]
-    black_img_1[current_event_1[zeros_1][:,1],current_event_1[zeros_1][:,0],:] = [0,0,255]
-    black_img[current_event[ones][:,1],current_event[ones][:,0],:] = [255,0,0]
-    black_img[current_event[zeros][:,1],current_event[zeros][:,0],:] = [0,0,255]
+    bp_valid = np.where((current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0))
+    for x in bp_valid[0]:
+        black_img[current_event[x,1],current_event[x,0]] += 5
+    for j in range(current_event_1.shape[0]):
+        black_img_1[current_event_1[j,1],current_event_1[j,0]] += 5
+    
+    # Normalize the image
+    black_img = black_img/ black_img.max()
+    black_img_1 = black_img_1/ black_img_1.max()
+    
+    
+
+    # Map it back to 0-255
+    black_img  = black_img * 255
+    black_img_1  = black_img_1 * 255
+
+
+    black_img = black_img.astype(np.uint8)
+    black_img_1 = black_img_1.astype(np.uint8)
+    
+    # ones_1 = np.where(current_event_1[:,2]==1)
+    # zeros_1 = np.where(current_event_1[:,2]==0)
+    # zeros=np.where((current_event[:,2]==0) & (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0))
+    # ones=np.where((current_event[:,2]==1) & (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0))
+    # black_img_1[current_event_1[ones_1][:,1],current_event_1[ones_1][:,0],:] = [255,0,0]
+    # black_img_1[current_event_1[zeros_1][:,1],current_event_1[zeros_1][:,0],:] = [0,0,255]
+    # black_img[current_event[ones][:,1],current_event[ones][:,0],:] = [255,0,0]
+    # black_img[current_event[zeros][:,1],current_event[zeros][:,0],:] = [0,0,255]
 
 
     # Show the appended black_img
     cv2.namedWindow('image',cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('image', 960,720)
+    cv2.resizeWindow('image', 640,480)
     cv2.imshow('image',black_img)
     cv2.namedWindow('image1',cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('image1', 960,720)
+    cv2.resizeWindow('image1', 640,480)
     cv2.imshow('image1',black_img_1)
     #cv2.namedWindow('image',cv2.WINDOW_NORMAL)
     #cv2.resizeWindow('image', 960,720)
