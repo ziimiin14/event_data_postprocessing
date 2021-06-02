@@ -81,7 +81,7 @@ while(True):
     q1 = quat_world[temp_init]
     q2 = quat_world[temp_last]
 
-    # Rotate (q1.conjugate) from world frame to initial frame first and then apply rotation(q2) to the point
+    # Rotate (q2) to the desired point first and then apply rotation (q1.conjugate) to get rotation of desired position relative to point 1
     q3 = q1.conjugate*q2
     # q3 = q2*q1.conjugate
 
