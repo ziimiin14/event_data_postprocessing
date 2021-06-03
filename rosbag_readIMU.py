@@ -20,7 +20,7 @@ if __name__ == "__main__":
     count = 0 
 
     for topic, msg, t in bag.read_messages(topics=['/dvs/imu']):
-        data = [float(str(msg.header.stamp.secs)+str(msg.header.stamp.nsecs))/1e9,msg.angular_velocity.x,msg.angular_velocity.y,msg.angular_velocity.z]
+        data = [float(int(msg.header.stamp.secs)+(int(msg.header.stamp.nsecs)/1e9)),msg.angular_velocity.x,msg.angular_velocity.y,msg.angular_velocity.z]
         data = np.array(data,dtype=np.float64)
         data.tofile(output_filename)
 

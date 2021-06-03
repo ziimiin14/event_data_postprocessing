@@ -11,25 +11,37 @@ K_arr = np.array(K)
 K_I_arr = np.array(K.I)
 
 # Load events data from bin file
-event = np.fromfile('../event_data_05122021/bin_file/kratos_eventOnly_05122021_2.bin',dtype=np.uint16)
+event = np.fromfile('../event_data_06022021/bin_file/kratos_eventOnly_06022021_1.bin',dtype=np.uint16)
 event = event.reshape(-1,3)
 
 # Load time data (event) from bin file
-time_sec = np.fromfile('../event_data_05122021/bin_file/kratos_eventTime_05122021_2.bin',dtype=np.float64)
+time_sec = np.fromfile('../event_data_06022021/bin_file/kratos_eventTime_06022021_1.bin',dtype=np.float64)
 time_sec = time_sec.reshape(-1,1) 
 time_interval = 1/250
 
 # Load opti track data
-opti = np.fromfile('../event_data_05122021/bin_file/kratos_quat_05122021_2.bin',dtype=np.float64)
-opti = opti.reshape(-1,5)
-opti_time = opti[:,0]
-opti_time = opti_time.reshape(-1,1)
-opti_quat = opti[:,1:]
+imu = np.fromfile('../event_data_06022021/bin_file/kratos_IMU_06022021_1.bin',dtype=np.float64)
+imu = imu.reshape(-1,4)
+imu_time = imu[:,0]
+imu_time = imu_time.reshape(-1,1)
+imu_ang = imu[:,1:]
+imu_ang = imu_ang*180/np.pi
+
+#Calcaulate angle rotated
+diff_imu_time = np.diff(imu_time,axis=0)
+diff_angle = diff_imu_time*imu_ang[0:-1,:]
+
+angle = np.zeros(imu_ang.shape)
+
+for i in range(1,angle.shape[0]):
+    angle[i] = diff_angle[i-1] + angle[i-1]
+
+
 
 
 # Find the start time and end time for opti track data to sync with event data time
-findFirst = np.where(opti_time[:,0]<time_sec[0,0])[0][-1] 
-findLast = np.where(opti_time[:,0]>time_sec[-1,0])[0][0]+1
+findFirst = np.where(imu_time[:,0]<time_sec[0,0])[0][-1] 
+findLast = np.where(imu_time[:,0]>time_sec[-1,0])[0][0]+1
 
 # Construct time histogram with respect to the opti_time (findFirst and findLast)
 time_init = opti_time[findFirst,:]
