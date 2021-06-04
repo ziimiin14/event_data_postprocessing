@@ -90,6 +90,7 @@ while(True):
     r = R.from_quat(q)
     euler = r.as_euler('ZYX',degrees=True)
     euler = euler.reshape(1,-1)
+    
 
     # Compute euler with rotation ratio
     # to obtain euler_arr (rotation with respect to each specific event time frame))
@@ -98,7 +99,12 @@ while(True):
     euler_arr[:,1] = euler_arr[:,0]
     euler_arr[:,0] = euler_arr[:,2]
     euler_arr[:,2] = temp
+    # temp = euler_arr[:,1].copy()
+    # euler_arr[:,1] = euler_arr[:,0]
+    # euler_arr[:,0] = euler_arr[:,2]
+    # euler_arr[:,2] = temp
     euler_arr = euler_arr-euler_arr[0,:]
+    print(euler_arr)
 
     # Convert the euler arr to dcm
     r1 = R.from_euler('ZYX',euler_arr,degrees=True)
@@ -135,9 +141,9 @@ while(True):
     current_event = final_pos_pixel
     bp_valid = np.where((current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0))
     for x in bp_valid[0]:
-        black_img[current_event[x,1],current_event[x,0]] += 5
+        black_img[current_event[x,1],current_event[x,0]] += 1
     for j in range(current_event_1.shape[0]):
-        black_img_1[current_event_1[j,1],current_event_1[j,0]] += 5
+        black_img_1[current_event_1[j,1],current_event_1[j,0]] += 1
     
     # Normalize the image
     black_img = black_img/ black_img.max()

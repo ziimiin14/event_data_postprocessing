@@ -11,16 +11,16 @@ K_arr = np.array(K)
 K_I_arr = np.array(K.I)
 
 # Load events data from bin file
-event = np.fromfile('../event_data_06022021/bin_file/kratos_eventOnly_06022021_1.bin',dtype=np.uint16)
+event = np.fromfile('../event_data_06022021/bin_file/kratos_eventOnly_06022021_2.bin',dtype=np.uint16)
 event = event.reshape(-1,3)
 
 # Load time data (event) from bin file
-time_sec = np.fromfile('../event_data_06022021/bin_file/kratos_eventTime_06022021_1.bin',dtype=np.float64)
+time_sec = np.fromfile('../event_data_06022021/bin_file/kratos_eventTime_06022021_2.bin',dtype=np.float64)
 time_sec = time_sec.reshape(-1,1) 
-time_interval = 1/250
+time_interval = 1/100
 
 # Load opti track data
-imu = np.fromfile('../event_data_06022021/bin_file/kratos_IMU_06022021_1.bin',dtype=np.float64)
+imu = np.fromfile('../event_data_06022021/bin_file/kratos_IMU_06022021_2.bin',dtype=np.float64)
 imu = imu.reshape(-1,4)
 imu_time = imu[:,0]
 imu_time = imu_time.reshape(-1,1)
@@ -36,29 +36,26 @@ angle = np.zeros(imu_ang.shape)
 for i in range(1,angle.shape[0]):
     angle[i] = diff_angle[i-1] + angle[i-1]
 
-
-
+angle[:,1] = -angle[:,1]
+angle[:,2] = -angle[:,2]
 
 # Find the start time and end time for opti track data to sync with event data time
-findFirst = np.where(imu_time[:,0]<time_sec[0,0])[0][-1] 
-findLast = np.where(imu_time[:,0]>time_sec[-1,0])[0][0]+1
+# findFirst = np.where(imu_time[:,0]<time_sec[0,0])[0][-1] 
+findFirst = np.where(time_sec[:,0]<imu_time[0,0])[0][-1] + 1
+# findLast = np.where(imu_time[:,0]>time_sec[-1,0])[0][0]+1
+findLast = np.where(time_sec[:,0]>imu_time[-1,0])[0][0]
+
+
+# Slice the time_sec and event from findFirst to findLast
+time_sec = time_sec[findFirst:findLast,:]
+event = event[findFirst:findLast,:]
 
 # Construct time histogram with respect to the opti_time (findFirst and findLast)
-time_init = opti_time[findFirst,:]
-time_end = opti_time[findLast,:]
-time_range = np.arange(time_init,time_end,time_interval)
+time_init = imu_time[0,:]
+time_end = imu_time[-1,:]
+time_range = np.arange(time_init,time_end+time_interval,time_interval)
 time_hist,time_binEdge = np.histogram(time_sec,bins=time_range)
 time_hist_cum = np.cumsum(time_hist)
-
-# Compute rotation relative to the first frame
-# opti_quat = opti_quat[findFirst:findLast,:]
-quat = np.roll(opti_quat,1,axis=1)
-quat_world = []
-
-
-for i in range(quat.shape[0]):
-    quat_world.append(Quaternion(quat[i,:]))
-
 
 # User input
 max_frame= time_hist.shape[0]
@@ -78,38 +75,34 @@ while(True):
     # Declare a specific_event and specific_time for specific frame requested
     specific_event = event[prev:current,:]
     specific_time = time_sec[prev:current,:]
+    print(specific_event.shape)
 
     # Find the initial opti time index(temp_init) that is lesser than first specific time and
     # last opti time index(temp_last) that is more that last specific time
-    temp_init = np.where(opti_time[:,0]<=specific_time[0,0])[0][-1]
-    temp_last = np.where(opti_time[:,0]>=specific_time[-1,0])[0][0]
+    temp_init = np.where(imu_time[:,0]<=specific_time[0,0])[0][-1]
+    temp_last = np.where(imu_time[:,0]>=specific_time[-1,0])[0][0]
 
     # Define the rotation ratio 
-    diff_time_numerator = specific_time-opti_time[temp_init,0]
-    diff_time_denominator = opti_time[temp_last,0]-opti_time[temp_init,0]
+    diff_time_numerator = specific_time-imu_time[temp_init,0]
+    diff_time_denominator = imu_time[temp_last,0]-imu_time[temp_init,0]
     ratio = diff_time_numerator/diff_time_denominator
 
     # Declare the quaternions with respect to the initial and last opti time index
-    q1 = quat_world[temp_init]
-    q2 = quat_world[temp_last]
+    a1 = angle[temp_init]
+    a2 = angle[temp_last]
 
     # Rotate (q2) to the desired point first and then apply rotation (q1.conjugate) to get rotation of desired position relative to point 1
-    q3 = q1.conjugate*q2
+    euler = a2-a1
+
     # q3 = q2*q1.conjugate
 
     # Convert quaternion to euler with the sequence of ZYX
-    q = np.array([q3[1],q3[2],q3[3],q3[0]])
-    r = R.from_quat(q)
-    euler = r.as_euler('ZYX',degrees=True)
+    euler[0],euler[2] = euler[2],euler[0]
     euler = euler.reshape(1,-1)
 
     # Compute euler with rotation ratio
     # to obtain euler_arr (rotation with respect to each specific event time frame))
     euler_arr = np.dot(ratio,euler)
-    temp = -euler_arr[:,1].copy()
-    euler_arr[:,1] = euler_arr[:,0]
-    euler_arr[:,0] = euler_arr[:,2]
-    euler_arr[:,2] = temp
     euler_arr = euler_arr-euler_arr[0,:]
 
     # Convert the euler arr to dcm
@@ -147,9 +140,9 @@ while(True):
     current_event = final_pos_pixel
     bp_valid = np.where((current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0))
     for x in bp_valid[0]:
-        black_img[current_event[x,1],current_event[x,0]] += 5
+        black_img[current_event[x,1],current_event[x,0]] += 1
     for j in range(current_event_1.shape[0]):
-        black_img_1[current_event_1[j,1],current_event_1[j,0]] += 5
+        black_img_1[current_event_1[j,1],current_event_1[j,0]] += 1
     
     # Normalize the image
     black_img = black_img/ black_img.max()
