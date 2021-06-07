@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 from scipy.spatial.transform import Rotation as R
 from pyquaternion import Quaternion
 import cv2
+import os
 
 # Initialize image dimension
 width =320
@@ -14,16 +15,16 @@ K_arr = np.array(K)
 K_I_arr = np.array(K.I)
 
 # Load events data from bin file
-event = np.fromfile('../event_data_06022021/bin_file/kratos_eventOnly_06022021_2.bin',dtype=np.uint16)
+event = np.fromfile('../event_data_06022021/bin_file/kratos_eventOnly_06022021.bin',dtype=np.uint16)
 event = event.reshape(-1,3)
 
 # Load time data (event) from bin file
-time_sec = np.fromfile('../event_data_06022021/bin_file/kratos_eventTime_06022021_2.bin',dtype=np.float64)
+time_sec = np.fromfile('../event_data_06022021/bin_file/kratos_eventTime_06022021.bin',dtype=np.float64)
 time_sec = time_sec.reshape(-1,1) 
-time_interval = 1/1000
+time_interval = 1/100
 
 # Load opti track data
-imu = np.fromfile('../event_data_06022021/bin_file/kratos_IMU_06022021_2.bin',dtype=np.float64)
+imu = np.fromfile('../event_data_06022021/bin_file/kratos_IMU_06022021.bin',dtype=np.float64)
 imu = imu.reshape(-1,4)
 imu_time = imu[:,0]
 imu_time = imu_time.reshape(-1,1)
@@ -43,9 +44,7 @@ angle[:,1] = -angle[:,1]
 angle[:,2] = -angle[:,2]
 
 # Find the start time and end time for opti track data to sync with event data time
-# findFirst = np.where(imu_time[:,0]<time_sec[0,0])[0][-1] 
 findFirst = np.where(time_sec[:,0]<imu_time[0,0])[0][-1] + 1
-# findLast = np.where(imu_time[:,0]>time_sec[-1,0])[0][0]+1
 findLast = np.where(time_sec[:,0]>imu_time[-1,0])[0][0]
 
 
@@ -60,23 +59,16 @@ time_range = np.arange(time_init,time_end+time_interval,time_interval)
 time_hist,time_binEdge = np.histogram(time_sec,bins=time_range)
 time_hist_cum = np.cumsum(time_hist)
 
-# User input
+# Maximum frame and initialize first time interval event frame
 max_frame= time_hist.shape[0]
-user_input = input('Please choose the specific frame from 0 - '+str(max_frame-1)+': ')
-user_input = int(user_input)
-i= user_input
+i = 0
+prev = 0
 current = time_hist_cum[i]
-current_time = time_range[i+1]
-if i == 0:
-    prev = 0
-else:
-    prev = time_hist_cum[i-1]
 
-xedges = np.arange(0,width+1,1)
-yedges = np.arange(0,height+1,1)
+txt_file = open('../event_data_06022021/txt_file/kratos_event_06022021.txt','w')
 
-
-while(True):
+txt_file.write("{} {}\n".format(width,height))
+while i < max_frame:
     ## For each frame:
     # Declare a specific_event and specific_time for specific frame requested
     specific_event = event[prev:current,:]
@@ -137,99 +129,31 @@ while(True):
     # con,img = gauss3sigma(final_pos_pixel[:,:2])
 
 
-    black_img_1  = np.zeros((height,width),dtype =np.uint8)
-    black_img  = np.zeros((height,width),dtype =np.uint8)
-    current_event_1 = event[prev:current,:].copy()
     current_event = final_pos_pixel
     boolean = (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0)
     current_event  = current_event[boolean,:]
-
+    current_time  = specific_time[boolean,:]
     
-    black_img,yed,xed=np.histogram2d(current_event[:,1],current_event[:,0],bins=(yedges,xedges))
-    black_img_1,yed,xed=np.histogram2d(current_event_1[:,1],current_event_1[:,0],bins=(yedges,xedges))
+    final_txt_data = np.hstack([current_time,current_event])
 
-    
-    # Normalize the image
-    black_img = black_img/ black_img.max()
-    black_img_1 = black_img_1/ black_img_1.max()
-    
-    
+    for d1,d2,d3,d4 in final_txt_data:
+        d_all = "{} {} {} {}\n".format(d1,int(d2),int(d3),int(d4))
+        txt_file.write(d_all)
 
-    # Map it back to 0-255
-    black_img  = black_img * 255
-    black_img_1  = black_img_1 * 255
+    i += 1
+    if i == max_frame:
+        break
 
-
-    black_img = black_img.astype(np.uint8)
-    black_img_1 = black_img_1.astype(np.uint8)
-    
-    # ones_1 = np.where(current_event_1[:,2]==1)
-    # zeros_1 = np.where(current_event_1[:,2]==0)
-    # zeros=np.where((current_event[:,2]==0) & (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0))
-    # ones=np.where((current_event[:,2]==1) & (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0))
-    # black_img_1[current_event_1[ones_1][:,1],current_event_1[ones_1][:,0],:] = [255,0,0]
-    # black_img_1[current_event_1[zeros_1][:,1],current_event_1[zeros_1][:,0],:] = [0,0,255]
-    # black_img[current_event[ones][:,1],current_event[ones][:,0],:] = [255,0,0]
-    # black_img[current_event[zeros][:,1],current_event[zeros][:,0],:] = [0,0,255]
-
-
-    # Show the appended black_img
-    cv2.namedWindow('image',cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('image', 640,480)
-    cv2.imshow('image',black_img)
-    cv2.namedWindow('image1',cv2.WINDOW_NORMAL)
-    cv2.resizeWindow('image1', 640,480)
-    cv2.imshow('image1',black_img_1)
-    #cv2.namedWindow('image',cv2.WINDOW_NORMAL)
-    #cv2.resizeWindow('image', 960,720)
-    #cv2.imshow('image',img)
-    # plt.imshow(img)
-    # plt.show()
-
-    k = cv2.waitKey(5000)
-
-    if k == ord('c'):
+    prev,current = time_hist_cum[i-1], time_hist_cum[i]
+    while prev == current:
         i += 1
         prev,current = time_hist_cum[i-1], time_hist_cum[i]
-        while prev==current:
-            i += 1
-            prev,current = time_hist_cum[i-1], time_hist_cum[i]
 
-        continue
-    
-    elif k == ord('x'):
-        i -= 1
-        prev,current = time_hist_cum[i-1], time_hist_cum[i]
-        while prev == current:
-            i -= 1
-            prev,current = time_hist_cum[i-1], time_hist_cum[i]
-        continue
+    print(i)
 
-    elif k == ord('n'):
-        user_input = input('Please choose a new specific frame from 1 - '+str(max_frame)+': ')
-        user_input = int(user_input)
-        i= user_input-1
-        current = time_hist_cum[i]
-        if i == 0:
-            prev = 0
-        else:
-            prev = time_hist_cum[i-1]
-        continue
+print(max_frame-1)
 
-    elif k == ord('s'): # wait for 's' key to save and exit
-        cv2.imwrite('frame'+str(i)+'.png', black_img)
-        data = np.concatenate([time_sec[prev:current,:],current_event],axis=1)
-        np.savetxt('frame'+str(i)+'.csv',data,delimiter=',')
-        continue
+txt_file.close()
 
-    elif k == ord('q'):
-        break
-    
-    else:
-        continue
     
     
-    
-cv2.destroyAllWindows() 
-
-

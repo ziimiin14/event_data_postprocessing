@@ -4,6 +4,10 @@ from scipy.spatial.transform import Rotation as R
 from pyquaternion import Quaternion
 import cv2
 
+
+# Initialize image dimension
+width =320
+height=240
     
 # Initialize K matrix
 K= np.matrix([[330.1570953377, 0., 161.9624665569], [0., 329.536232838, 110.80414596744],[ 0., 0., 1.]])
@@ -60,6 +64,9 @@ if i == 0:
 else:
     prev = time_hist_cum[i-1]
 
+xedges = np.arange(0,width+1,1)
+yedges = np.arange(0,height+1,1)
+
 
 while(True):
     ## For each frame:
@@ -104,7 +111,6 @@ while(True):
     # euler_arr[:,0] = euler_arr[:,2]
     # euler_arr[:,2] = temp
     euler_arr = euler_arr-euler_arr[0,:]
-    print(euler_arr)
 
     # Convert the euler arr to dcm
     r1 = R.from_euler('ZYX',euler_arr,degrees=True)
@@ -139,11 +145,12 @@ while(True):
     black_img  = np.zeros((height,width),dtype =np.uint8)
     current_event_1 = event[prev:current,:].copy()
     current_event = final_pos_pixel
-    bp_valid = np.where((current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0))
-    for x in bp_valid[0]:
-        black_img[current_event[x,1],current_event[x,0]] += 1
-    for j in range(current_event_1.shape[0]):
-        black_img_1[current_event_1[j,1],current_event_1[j,0]] += 1
+    boolean = (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0)
+    current_event  = current_event[boolean,:]
+
+    
+    black_img,yed,xed=np.histogram2d(current_event[:,1],current_event[:,0],bins=(yedges,xedges))
+    black_img_1,yed,xed=np.histogram2d(current_event_1[:,1],current_event_1[:,0],bins=(yedges,xedges))
     
     # Normalize the image
     black_img = black_img/ black_img.max()
