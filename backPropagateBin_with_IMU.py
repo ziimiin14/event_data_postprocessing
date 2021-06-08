@@ -20,7 +20,7 @@ event = event.reshape(-1,3)
 # Load time data (event) from bin file
 time_sec = np.fromfile('../event_data_06022021/bin_file/kratos_eventTime_06022021_2.bin',dtype=np.float64)
 time_sec = time_sec.reshape(-1,1) 
-time_interval = 1/1000
+time_interval = 1/100
 
 # Load opti track data
 imu = np.fromfile('../event_data_06022021/bin_file/kratos_IMU_06022021_2.bin',dtype=np.float64)
@@ -52,6 +52,12 @@ findLast = np.where(time_sec[:,0]>imu_time[-1,0])[0][0]
 # Slice the time_sec and event from findFirst to findLast
 time_sec = time_sec[findFirst:findLast,:]
 event = event[findFirst:findLast,:]
+
+time_sec = time_sec - imu_time[0,0]
+imu_time = imu_time - imu_time[0,0]
+
+time_sec = time_sec.astype(np.float32)
+imu_time = imu_time.astype(np.float32)
 
 # Construct time histogram with respect to the opti_time (findFirst and findLast)
 time_init = imu_time[0,:]
