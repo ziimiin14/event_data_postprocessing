@@ -62,10 +62,8 @@ class backPropagatedEvents:
         self.time_sec = self.time_sec - self.imu_time[0,0]
         self.imu_time = self.imu_time - self.imu_time[0,0]
 
-        print(self.time_sec[-1,0],self.imu_time[-1,0])
         self.time_sec = self.time_sec.astype(np.float32)
         self.imu_time = self.imu_time.astype(np.float32)
-        print(self.time_sec[-1,0],self.imu_time[-1,0])
 
 
 
