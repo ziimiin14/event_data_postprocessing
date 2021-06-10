@@ -163,6 +163,7 @@ class ImageWriter:
         self.output_folder = options.output_folder
         self.dataset_name = options.dataset_name
         self.save_events = options.show_events
+        # self.save_events = True
         self.event_display_mode = options.event_display_mode
         self.num_bins_to_show = options.num_bins_to_show
         print('== Image Writer ==')
@@ -208,7 +209,9 @@ class ImageDisplay:
 
     def __init__(self, options):
         self.display = options.display
+        # self.display = True
         self.show_events = options.show_events
+        # self.show_events = True
         self.color = options.color
         self.event_display_mode = options.event_display_mode
         self.num_bins_to_show = options.num_bins_to_show

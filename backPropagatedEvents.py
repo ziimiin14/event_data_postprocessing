@@ -92,7 +92,11 @@ class backPropagatedEvents:
             else:
                 prev = self.time_hist_cum[self.i-1]
                 current = self.time_hist_cum[self.i]
-
+            while prev == current:
+                self.i += 1
+                prev = self.time_hist_cum[self.i-1]
+                current = self.time_hist_cum[self.i]
+                
             # Declare a specific_event and specific_time for specific frame requested
             specific_event = self.event[prev:current,:]
             specific_time = self.time_sec[prev:current,:]
@@ -101,15 +105,22 @@ class backPropagatedEvents:
             # last opti time index(temp_last) that is more that last specific time
             temp_init = np.where(self.imu_time[:,0]<=specific_time[0,0])[0][-1]
             temp_last = np.where(self.imu_time[:,0]>=specific_time[-1,0])[0][0]
+            # temp_init = self.imu_time[:,0]<=specific_time[0,0]
+            # temp_last = self.imu_time[:,0]>=specific_time[-1,0]
+        
 
             # Define the rotation ratio 
             diff_time_numerator = specific_time-self.imu_time[temp_init,0]
             diff_time_denominator = self.imu_time[temp_last,0]-self.imu_time[temp_init,0]
+            # diff_time_numerator = specific_time-self.imu_time[temp_init][-1]
+            # diff_time_denominator = self.imu_time[temp_last][0]-self.imu_time[temp_init][-1]
             ratio = diff_time_numerator/diff_time_denominator
 
             # Declare the quaternions with respect to the initial and last opti time index
             a1 = self.angle[temp_init]
             a2 = self.angle[temp_last]
+            # a1 = self.angle[temp_init][-1]
+            # a2 = self.angle[temp_last][0]
 
             # Get rotated angle between 2 pose
             euler = a2-a1

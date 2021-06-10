@@ -1,5 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
+from numpy.core.fromnumeric import clip
 from scipy.spatial.transform import Rotation as R
 from pyquaternion import Quaternion
 import cv2
@@ -148,17 +149,31 @@ while(True):
     current_event_1 = event[prev:current,:].copy()
     current_event = final_pos_pixel
     boolean = (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0)
-    current_event  = current_event[boolean,:]
+    current_event = current_event[boolean,:]
 
-    
+    ## Normalize the image from 0-1 by clipping
+    # boolean = (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0) & (current_event[:,2] == 0)
+    # boolean1 = (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0) & (current_event[:,2] == 1)
+    # curr_event  = current_event[boolean,:]
+    # curr_event1  = current_event[boolean1,:]
+
     black_img,yed,xed=np.histogram2d(current_event[:,1],current_event[:,0],bins=(yedges,xedges))
     black_img_1,yed,xed=np.histogram2d(current_event_1[:,1],current_event_1[:,0],bins=(yedges,xedges))
+
+    # curr_img,yed,xed=np.histogram2d(curr_event[:,1],curr_event[:,0],bins=(yedges,xedges))
+    # curr_img1,yed,xed=np.histogram2d(curr_event1[:,1],curr_event1[:,0],bins=(yedges,xedges))
+    # curr_img[curr_img<2] = 0
+    # curr_img1[curr_img1<2] = 0
+    # black_img = curr_img1- curr_img
 
     
     # Normalize the image
     black_img = black_img/ black_img.max()
     black_img_1 = black_img_1/ black_img_1.max()
-    
+
+    # black_img = np.clip(black_img,-15,15)
+    # black_img = (black_img+15)/float(30)
+
     
 
     # Map it back to 0-255
@@ -186,11 +201,7 @@ while(True):
     cv2.namedWindow('image1',cv2.WINDOW_NORMAL)
     cv2.resizeWindow('image1', 640,480)
     cv2.imshow('image1',black_img_1)
-    #cv2.namedWindow('image',cv2.WINDOW_NORMAL)
-    #cv2.resizeWindow('image', 960,720)
-    #cv2.imshow('image',img)
-    # plt.imshow(img)
-    # plt.show()
+
 
     k = cv2.waitKey(5000)
 

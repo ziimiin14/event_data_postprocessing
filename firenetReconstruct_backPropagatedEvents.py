@@ -23,9 +23,9 @@ if __name__ == "__main__":
         description='Evaluating a trained network')
     parser.add_argument('-c', '--path_to_model', required=True, type=str,
                         help='path to model weights')
-    parser.add_argument('--event_path',default = " ", type=str)
-    parser.add_argument('--time_path',default = " ", type=str)
-    parser.add_argument('--imu_path',default = " ", type=str)
+    parser.add_argument('--event_path',default = "ttt", type=str)
+    parser.add_argument('--time_path',default = "aaa", type=str)
+    parser.add_argument('--imu_path',default = " ccc", type=str)
     parser.add_argument('--skipevents', default=0, type=int)
     parser.add_argument('--suboffset', default=0, type=int)
     parser.add_argument('--compute_voxel_grid_on_cpu', dest='compute_voxel_grid_on_cpu', action='store_true')
@@ -34,6 +34,7 @@ if __name__ == "__main__":
     set_inference_options(parser)
 
     args = parser.parse_args()
+    print(args)
 
     width,height = 320,240
     print('Sensor size: {} x {}'.format(width, height))

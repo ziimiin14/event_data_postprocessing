@@ -38,8 +38,12 @@ class ImageReconstructor:
             options.auto_hdr = False  # disable auto_hdr for color reconstruction (otherwise, each channel will be normalized independently)
 
         self.crop = CropParameters(self.width, self.height, self.model.num_encoders)
+        
+        init_1 = torch.zeros((1,16,240,320),device='cuda:0',dtype=torch.float32)
+        init_2 = torch.zeros((1,16,240,320),device='cuda:0',dtype=torch.float32)
+        self.init_state = [init_1,init_2]
 
-        self.last_states_for_each_channel = {'grayscale': None}
+        self.last_states_for_each_channel = {'grayscale': self.init_state}
 
         if self.perform_color_reconstruction:
             self.crop_halfres = CropParameters(int(width / 2), int(height / 2),
@@ -81,7 +85,7 @@ class ImageReconstructor:
                                                                  self.last_states_for_each_channel[channel])
 
                     if self.no_recurrent:
-                        self.last_states_for_each_channel[channel] = None
+                        self.last_states_for_each_channel[channel] = self.init_state
                     else:
                         self.last_states_for_each_channel[channel] = states
 
