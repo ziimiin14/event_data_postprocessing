@@ -27,7 +27,7 @@ class backPropagatedEvents:
         self.time_sec = np.fromfile(path_to_time_file,dtype=np.float64)
 
         self.time_sec = self.time_sec.reshape(-1,1) 
-        time_interval = 1/100
+        time_interval = 1/50
 
         # Load imu data
         imu = np.fromfile(path_to_imu_file,dtype=np.float64)
