@@ -14,7 +14,8 @@ class backPropagatedEvents:
         self.height=240
 
         # Initialize K matrix
-        self.K= np.matrix([[330.1570953377, 0., 161.9624665569], [0., 329.536232838, 110.80414596744],[ 0., 0., 1.]])
+        # self.K= np.matrix([[326.1387442, 0., 158.28624894], [0., 326.84650981, 112.96798711],[ 0., 0., 1.]])
+        self.K= np.matrix([[322.27115293, 0., 156.60442714], [0., 323.8544765, 116.09022504],[ 0., 0., 1.]]) # default
         self.K_arr = np.array(self.K)
         self.K_I_arr = np.array(self.K.I)
 
@@ -27,7 +28,7 @@ class backPropagatedEvents:
         self.time_sec = np.fromfile(path_to_time_file,dtype=np.float64)
 
         self.time_sec = self.time_sec.reshape(-1,1) 
-        time_interval = 1/50
+        time_interval = 1/200
 
         # Load imu data
         imu = np.fromfile(path_to_imu_file,dtype=np.float64)

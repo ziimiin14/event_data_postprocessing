@@ -10,21 +10,21 @@ width =320
 height=240
     
 # Initialize K matrix
-K= np.matrix([[330.1570953377, 0., 161.9624665569], [0., 329.536232838, 110.80414596744],[ 0., 0., 1.]])
+K= np.matrix([[322.27115293, 0., 156.60442714], [0., 323.8544765, 116.09022504],[ 0., 0., 1.]])
 K_arr = np.array(K)
 K_I_arr = np.array(K.I)
 
 # Load events data from bin file
-event = np.fromfile('../event_data_06022021/bin_file/kratos_eventOnly_06022021.bin',dtype=np.uint16)
+event = np.fromfile('../event_data_06152021/bin_file/kratos_eventOnly_06152021_2.bin',dtype=np.uint16)
 event = event.reshape(-1,3)
 
 # Load time data (event) from bin file
-time_sec = np.fromfile('../event_data_06022021/bin_file/kratos_eventTime_06022021.bin',dtype=np.float64)
+time_sec = np.fromfile('../event_data_06152021/bin_file/kratos_eventTime_06152021_2.bin',dtype=np.float64)
 time_sec = time_sec.reshape(-1,1) 
-time_interval = 1/100
+time_interval = 1/200
 
 # Load opti track data
-imu = np.fromfile('../event_data_06022021/bin_file/kratos_IMU_06022021.bin',dtype=np.float64)
+imu = np.fromfile('../event_data_06152021/bin_file/kratos_IMU_06152021_2.bin',dtype=np.float64)
 imu = imu.reshape(-1,4)
 imu_time = imu[:,0]
 imu_time = imu_time.reshape(-1,1)
@@ -146,43 +146,43 @@ while(True):
 
     black_img_1  = np.zeros((height,width),dtype =np.uint8)
     black_img  = np.zeros((height,width),dtype =np.uint8)
-    # current_event_1 = event[prev:current,:].copy()
+    current_event_1 = event[prev:current,:].copy()
     current_event = final_pos_pixel
-    # boolean = (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0)
-    # current_event = current_event[boolean,:]
+    boolean = (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0)
+    current_event = current_event[boolean,:]
 
     ## Normalize the image from 0-1 by clipping
-    boolean = (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0) & (current_event[:,2] == 0)
-    boolean1 = (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0) & (current_event[:,2] == 1)
-    curr_event  = current_event[boolean,:]
-    curr_event1  = current_event[boolean1,:]
+    # boolean = (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0) & (current_event[:,2] == 0)
+    # boolean1 = (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0) & (current_event[:,2] == 1)
+    # curr_event  = current_event[boolean,:]
+    # curr_event1  = current_event[boolean1,:]
 
-    # black_img,yed,xed=np.histogram2d(current_event[:,1],current_event[:,0],bins=(yedges,xedges))
-    # black_img_1,yed,xed=np.histogram2d(current_event_1[:,1],current_event_1[:,0],bins=(yedges,xedges))
+    black_img,yed,xed=np.histogram2d(current_event[:,1],current_event[:,0],bins=(yedges,xedges))
+    black_img_1,yed,xed=np.histogram2d(current_event_1[:,1],current_event_1[:,0],bins=(yedges,xedges))
 
-    curr_img,yed,xed=np.histogram2d(curr_event[:,1],curr_event[:,0],bins=(yedges,xedges))
-    curr_img1,yed,xed=np.histogram2d(curr_event1[:,1],curr_event1[:,0],bins=(yedges,xedges))
-    curr_img[curr_img<2] = 0
-    curr_img1[curr_img1<2] = 0
-    black_img = curr_img1- curr_img
+    # curr_img,yed,xed=np.histogram2d(curr_event[:,1],curr_event[:,0],bins=(yedges,xedges))
+    # curr_img1,yed,xed=np.histogram2d(curr_event1[:,1],curr_event1[:,0],bins=(yedges,xedges))
+    # curr_img[curr_img<2] = 0
+    # curr_img1[curr_img1<2] = 0
+    # black_img = curr_img1- curr_img
 
     
     # Normalize the image
-    # black_img = black_img/ black_img.max()
-    # black_img_1 = black_img_1/ black_img_1.max()
+    black_img = black_img/ black_img.max()
+    black_img_1 = black_img_1/ black_img_1.max()
 
-    black_img = np.clip(black_img,-10,10)
-    black_img = (black_img+10)/float(20)
+    # black_img = np.clip(black_img,-10,10)
+    # black_img = (black_img+10)/float(20)
 
     
 
     # Map it back to 0-255
-    # black_img  = black_img * 255
-    # black_img_1  = black_img_1 * 255
+    black_img  = black_img * 255
+    black_img_1  = black_img_1 * 255
 
 
-    # black_img = black_img.astype(np.uint8)
-    # black_img_1 = black_img_1.astype(np.uint8)
+    black_img = black_img.astype(np.uint8)
+    black_img_1 = black_img_1.astype(np.uint8)
     
     # ones_1 = np.where(current_event_1[:,2]==1)
     # zeros_1 = np.where(current_event_1[:,2]==0)
