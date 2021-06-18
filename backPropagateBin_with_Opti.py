@@ -21,7 +21,7 @@ event = event.reshape(-1,3)
 # Load time data (event) from bin file
 time_sec = np.fromfile('../event_data_05122021/bin_file/kratos_eventTime_05122021_2.bin',dtype=np.float64)
 time_sec = time_sec.reshape(-1,1) 
-time_interval = 1/250
+time_interval = 1/100
 
 # Load opti track data
 opti = np.fromfile('../event_data_05122021/bin_file/kratos_quat_05122021_2.bin',dtype=np.float64)
@@ -100,16 +100,12 @@ while(True):
     
 
     # Compute euler with rotation ratio
-    # to obtain euler_arr (rotation with respect to each specific event time frame))
+    # to obtain euler_arr (rotation with respect to each specific event time frame)
     euler_arr = np.dot(ratio,euler)
     temp = -euler_arr[:,1].copy()
-    euler_arr[:,1] = euler_arr[:,0]
-    euler_arr[:,0] = euler_arr[:,2]
+    euler_arr[:,1] = -euler_arr[:,0]
+    euler_arr[:,0] = -euler_arr[:,2]
     euler_arr[:,2] = temp
-    # temp = euler_arr[:,1].copy()
-    # euler_arr[:,1] = euler_arr[:,0]
-    # euler_arr[:,0] = euler_arr[:,2]
-    # euler_arr[:,2] = temp
     euler_arr = euler_arr-euler_arr[0,:]
 
     # Convert the euler arr to dcm
@@ -128,7 +124,7 @@ while(True):
     # print(dcm_T.shape,specific_pos_camera.shape)
 
     # Back propagate points in camera frame
-    BxC = np.einsum('iab,bi->ai',dcm_T,specific_pos_camera)
+    BxC = np.einsum('iab,bi->ai',dcm,specific_pos_camera)
 
     final_pos_pixel = K_arr@BxC
     final_pos_pixel = final_pos_pixel.T

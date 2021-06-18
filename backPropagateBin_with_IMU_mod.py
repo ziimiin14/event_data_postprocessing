@@ -22,7 +22,7 @@ event = event.reshape(-1,3)
 # Load time data (event) from bin file
 time_sec = np.fromfile('../event_data_06152021/bin_file/kratos_eventTime_06152021_1.bin',dtype=np.float64)
 time_sec = time_sec.reshape(-1,1) 
-time_interval = 1/50
+time_interval = 1/100
 
 # Load opti track data
 imu = np.fromfile('../event_data_06152021/bin_file/kratos_IMU_06152021_1.bin',dtype=np.float64)
@@ -30,20 +30,6 @@ imu = imu.reshape(-1,4)
 imu_time = imu[:,0]
 imu_time = imu_time.reshape(-1,1)
 imu_ang = imu[:,1:]
-imu_ang = imu_ang*180/np.pi
-
-#Calcaulate angle rotated
-diff_imu_time = np.diff(imu_time,axis=0)
-diff_angle = diff_imu_time*imu_ang[0:-1,:]
-
-angle = np.zeros(imu_ang.shape)
-
-for i in range(1,angle.shape[0]):
-    angle[i] = diff_angle[i-1] + angle[i-1]
-
-# angle[:,1] = -angle[:,1]
-# angle[:,2] = -angle[:,2]
-# angle = -angle
 
 # Find the start time and end time for opti track data to sync with event data time
 if time_sec[0,0] < imu_time[0,0] and imu_time[-1,0] < time_sec[-1,0]:
@@ -141,38 +127,14 @@ while(True):
     specific_event = event[prev:current,:]
     specific_time = time_sec[prev:current,:]
 
-    # Find the initial imu time index(temp_init) that is lesser than first specific time and
-    # last imu time index(temp_last) that is more that last specific time
+    # Find the initial opti time index(temp_init) that is lesser than first specific time and
+    # last opti time index(temp_last) that is more that last specific time
     temp_init = np.where(imu_time[:,0]<=specific_time[0,0])[0][-1]
     temp_last = np.where(imu_time[:,0]>=specific_time[-1,0])[0][0]
 
-    # Define the rotation ratio 
-    diff_time_numerator = specific_time-imu_time[temp_init,0]
-    diff_time_denominator = imu_time[temp_last,0]-imu_time[temp_init,0]
-    ratio = diff_time_numerator/diff_time_denominator
+    curr_angV = imu_ang[temp_init:temp_last+1].mean(axis=0)
 
-    # Declare the euler with respect to the initial and last imu time index
-    a1 = angle[temp_init]
-    a2 = angle[temp_last]
 
-    # Obtain the difference between two euler angles
-    euler = a2-a1
-
-    # q3 = q2*q1.conjugate
-
-    # Swap XYZ order to ZYX order
-    euler[0],euler[2] = euler[2],euler[0]
-    euler = euler.reshape(1,-1)
-
-    # Compute euler with rotation ratio
-    # to obtain euler_arr (rotation with respect to each specific event time frame))
-    euler_arr = np.dot(ratio,euler)
-    euler_arr = euler_arr-euler_arr[0,:]
-
-    # Convert the euler arr to dcm
-    r1 = R.from_euler('ZYX',euler_arr,degrees=True)
-    dcm = r1.as_dcm()
-    # dcm_T = np.einsum('iab->iba',dcm)
 
     # Compute a 3 by N dimension array with respect to the specific events
     x_arr = specific_event[:,0]
@@ -180,20 +142,32 @@ while(True):
     z_arr = np.ones(specific_event.shape[0],dtype=np.uint16)
     specific_pos_pixel = np.reshape((x_arr,y_arr,z_arr),(3,-1)) # Points in pixel frame
 
-    # Compute points in camera frame
+    dt_temp = specific_time- specific_time[0,0]
+    dt_temp = dt_temp.reshape(-1)
+
+
+    # Convert points in from image frame to camera frame
     specific_pos_camera = K_I_arr@specific_pos_pixel
 
-    # Back propagate points in camera frame
-    BxC = np.einsum('iab,bi->ai',dcm,specific_pos_camera)
 
+    w3_y = curr_angV[2]*specific_pos_camera[1,:]
+    w3_x = curr_angV[2]*specific_pos_camera[0,:]
+    w1_y = curr_angV[0]*specific_pos_camera[1,:]
+    w2_x = curr_angV[1]*specific_pos_camera[0,:]
+
+    # Back propagate points in camera frame
+    x_new = specific_pos_camera[0,:] + ((curr_angV[1]-w3_y)*dt_temp)
+    y_new = specific_pos_camera[1,:] + ((w3_x-curr_angV[0])*dt_temp)
+    z_new = specific_pos_camera[2,:] + ((w1_y-w2_x)*dt_temp)
+
+    BxC = np.vstack([x_new,y_new,z_new])
     final_pos_pixel = K_arr@BxC
     final_pos_pixel = final_pos_pixel.T
     final_pos_pixel[:,0], final_pos_pixel[:,1],final_pos_pixel[:,2]=final_pos_pixel[:,0]/final_pos_pixel[:,2],final_pos_pixel[:,1]/final_pos_pixel[:,2],final_pos_pixel[:,2]/final_pos_pixel[:,2]
-    final_pos_pixel = np.round(final_pos_pixel)
     final_pos_pixel = final_pos_pixel.astype(int)
     final_pos_pixel[:,2] = event[prev:current,2]
 
-
+    
     # Black white  histogram 
     black_img_1  = np.zeros((height,width),dtype =np.uint8)
     black_img  = np.zeros((height,width),dtype =np.uint8)
@@ -237,6 +211,7 @@ while(True):
     cv2.namedWindow('image1',cv2.WINDOW_NORMAL)
     cv2.resizeWindow('image1', 640,480)
     cv2.imshow('image1',black_img_1)
+
 
 
     k = cv2.waitKey(5000)
