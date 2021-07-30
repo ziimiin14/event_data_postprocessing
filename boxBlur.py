@@ -61,8 +61,25 @@ def gaussBlur_4(scl,tcl,w,h,r):
     boxBlur_4(tcl,scl,w,h,int((bxs[1]-1)/2))
     boxBlur_4(scl,tcl,w,h,int((bxs[2]-1)/2))
 
+def gaussBlur_5(scl,tcl,w,h,r):
+    bxs = boxesForGauss(r,3)
+    boxBlur_5(scl,tcl,w,h,int((bxs[0]-1)/2))
+    boxBlur_5(tcl,scl,w,h,int((bxs[1]-1)/2))
+    boxBlur_5(scl,tcl,w,h,int((bxs[2]-1)/2))
+
 def boxBlur_4(scl,tcl,w,h,r):
-    scl,tcl=tcl,scl    
+    # scl,tcl=tcl,scl
+    for i in range(len(scl)):
+        tcl[i] = scl[i]
+    
+    boxBlurH_4(tcl,scl,w,h,r)
+    boxBlurT_4(scl,tcl,w,h,r)
+
+def boxBlur_5(scl,tcl,w,h,r):
+    for i in range(len(scl)):
+        temp = tcl[i]
+        tcl[i] = scl[i]
+        scl[i] = temp
     boxBlurH_4(tcl,scl,w,h,r)
     boxBlurT_4(scl,tcl,w,h,r)
 
