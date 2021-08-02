@@ -11,7 +11,10 @@ import argparse
 import numpy as np
 import time
 import cv2
-import backPropagatedEvents as bp
+# import backPropagatedEvents as bp
+# import Events as EV
+# import backPropagatedEvents_Opti as bp_Opti
+import Events_Opti as EV_Opti
 
 
 
@@ -56,7 +59,10 @@ if __name__ == "__main__":
     print(initial_offset,sub_offset,start_index)
 
 
-    bp_events_iterator = bp.backPropagatedEvents(args.event_path, args.time_path, args.imu_path)
+    # bp_events_iterator = bp.backPropagatedEvents(args.event_path, args.time_path, args.imu_path) ## Event data + IMU data (with backpropagation)
+    # bp_events_iterator = EV.Events(args.event_path, args.time_path, args.imu_path) ## Event data + IMU data (without backpropagation)
+    # bp_events_iterator = bp_Opti.backPropagatedEvents_Opti(args.event_path, args.time_path, args.imu_path) ## Event data + Opti data (with backpropagation)
+    bp_events_iterator = EV_Opti.Events_Opti(args.event_path, args.time_path, args.imu_path) ## Event data + Opti data (without backpropagation)
     with Timer('Processing entire iterator'):
         for event_window in bp_events_iterator:
             try:

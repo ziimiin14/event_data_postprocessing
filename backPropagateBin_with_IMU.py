@@ -16,16 +16,16 @@ K_arr = np.array(K)
 K_I_arr = np.array(K.I)
 
 # Load events data from bin file
-event = np.fromfile('../dvxplorer_data_set/event_data_06152021/bin_file/kratos_eventOnly_06152021_1.bin',dtype=np.uint16)
+event = np.fromfile('../dvxplorer_data_set/event_data_06152021/bin_file/kratos_eventOnly_06152021_2.bin',dtype=np.uint16)
 event = event.reshape(-1,3)
 
 # Load time data (event) from bin file
-time_sec = np.fromfile('../dvxplorer_data_set/event_data_06152021/bin_file/kratos_eventTime_06152021_1.bin',dtype=np.float64)
+time_sec = np.fromfile('../dvxplorer_data_set/event_data_06152021/bin_file/kratos_eventTime_06152021_2.bin',dtype=np.float64)
 time_sec = time_sec.reshape(-1,1) 
-time_interval = 1/50
+time_interval = 1/100
 
 # Load IMU data
-imu = np.fromfile('../dvxplorer_data_set/event_data_06152021/bin_file/kratos_IMU_06152021_1.bin',dtype=np.float64)
+imu = np.fromfile('../dvxplorer_data_set/event_data_06152021/bin_file/kratos_IMU_06152021_2.bin',dtype=np.float64)
 imu = imu.reshape(-1,4)
 imu_time = imu[:,0]
 imu_time = imu_time.reshape(-1,1)
@@ -40,7 +40,6 @@ angle = np.zeros(imu_ang.shape)
 
 for i in range(1,angle.shape[0]):
     angle[i] = diff_angle[i-1] + angle[i-1]
-
 # angle[:,1] = -angle[:,1]
 # angle[:,2] = -angle[:,2]
 # angle = -angle
@@ -158,8 +157,6 @@ while(True):
     # Obtain the difference between two euler angles
     euler = a2-a1
 
-    # q3 = q2*q1.conjugate
-
     # Swap XYZ order to ZYX order
     euler[0],euler[2] = euler[2],euler[0]
     euler = euler.reshape(1,-1)
@@ -195,8 +192,6 @@ while(True):
 
 
     # Black white  histogram 
-    black_img_1  = np.zeros((height,width),dtype =np.uint8)
-    black_img  = np.zeros((height,width),dtype =np.uint8)
     current_event_1 = specific_event
     current_event = final_pos_pixel
     boolean = (current_event[:,0]<width) & (current_event[:,1]<height) & (current_event[:,1]>=0) & (current_event[:,0]>=0)

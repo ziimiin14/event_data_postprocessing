@@ -47,9 +47,7 @@ class backPropagatedEvents:
         for i in range(1,self.angle.shape[0]):
             self.angle[i] = diff_angle[i-1] + self.angle[i-1]
 
-        # self.angle[:,1] = -self.angle[:,1]
-        # self.angle[:,2] = -self.angle[:,2]
-        # self.angle = -self.angle
+ 
         # Find the start time and end time for opti track data to sync with event data time
         if self.time_sec[0,0] < self.imu_time[0,0] and self.imu_time[-1,0] < self.time_sec[-1,0]:
             findFirst = np.where(self.time_sec[:,0]<self.imu_time[0,0])[0][-1] + 1
@@ -72,7 +70,7 @@ class backPropagatedEvents:
             findFirst = np.where(self.imu_time[:,0]<self.time_sec[0,0])[0][-1] 
             findLast = np.where(self.imu_time[:,0]>self.time_sec[-1,0])[0][0]+1
 
-            self.self.time_sec = self.time_sec - self.imu_time[findFirst,0]
+            self.time_sec = self.time_sec - self.imu_time[findFirst,0]
             self.imu_time = self.imu_time - self.imu_time[findFirst,0]
 
             self.time_sec = self.time_sec.astype(np.float32)
@@ -150,64 +148,7 @@ class backPropagatedEvents:
             specific_event = self.event[prev:current,:]
             specific_time = self.time_sec[prev:current,:]
 
-            # Find the initial opti time index(temp_init) that is lesser than first specific time and
-            # last opti time index(temp_last) that is more that last specific time
-            temp_init = np.where(self.imu_time[:,0]<=specific_time[0,0])[0][-1]
-            temp_last = np.where(self.imu_time[:,0]>=specific_time[-1,0])[0][0]
-
-        
-
-            # Define the rotation ratio 
-            diff_time_numerator = specific_time-self.imu_time[temp_init,0]
-            diff_time_denominator = self.imu_time[temp_last,0]-self.imu_time[temp_init,0]
-            ratio = diff_time_numerator/diff_time_denominator
-
-            # Declare the quaternions with respect to the initial and last opti time index
-            a1 = self.angle[temp_init]
-            a2 = self.angle[temp_last]
-
-
-            # Get rotated angle between 2 pose
-            euler = a2-a1
-
-            # Convert  the sequence of XYZ to ZYX
-            euler[0],euler[2] = euler[2],euler[0]
-            euler = euler.reshape(1,-1)
-
-            # Compute euler with rotation ratio
-            # to obtain euler_arr (rotation with respect to each specific event time frame))
-            euler_arr = np.dot(ratio,euler)
-            euler_arr = euler_arr-euler_arr[0,:]
-
-            # Convert the euler arr to dcm
-            r1 = R.from_euler('ZYX',euler_arr,degrees=True)
-            dcm = r1.as_dcm()
-            # dcm_T = np.einsum('iab->iba',dcm)
-
-            # Compute a 3 by N dimension array with respect to the specific events
-            x_arr = specific_event[:,0]
-            y_arr = specific_event[:,1]
-            z_arr = np.ones(specific_event.shape[0],dtype=np.uint16)
-            specific_pos_pixel = np.reshape((x_arr,y_arr,z_arr),(3,-1)) # Points in pixel frame
-
-            # Compute points in camera frame
-            specific_pos_camera = self.K_I_arr@specific_pos_pixel
-
-            # Back propagate points in camera frame
-            BxC = np.einsum('iab,bi->ai',dcm,specific_pos_camera)
-
-            final_pos_pixel = self.K_arr@BxC
-            final_pos_pixel = final_pos_pixel.T
-            final_pos_pixel[:,0], final_pos_pixel[:,1],final_pos_pixel[:,2]=final_pos_pixel[:,0]/final_pos_pixel[:,2],final_pos_pixel[:,1]/final_pos_pixel[:,2],final_pos_pixel[:,2]/final_pos_pixel[:,2]
-            final_pos_pixel = np.round(final_pos_pixel)
-            final_pos_pixel[:,2] = self.event[prev:current,2]
-
-            current_event = final_pos_pixel
-            boolean = (current_event[:,0]<self.width) & (current_event[:,1]<self.height) & (current_event[:,1]>=0) & (current_event[:,0]>=0)
-            current_event  = current_event[boolean,:]
-            current_time = specific_time[boolean,:]
-
-            res = np.hstack([current_time,current_event])
+            res = np.hstack([specific_time,specific_event])
 
             self.i += 1
             return res

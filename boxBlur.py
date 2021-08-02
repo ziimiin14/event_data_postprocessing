@@ -68,7 +68,7 @@ def gaussBlur_5(scl,tcl,w,h,r):
     boxBlur_5(scl,tcl,w,h,int((bxs[2]-1)/2))
 
 def boxBlur_4(scl,tcl,w,h,r):
-    # scl,tcl=tcl,scl
+    # scl,tcl=tcl,scl  ## giving diff result as boxBlur_5
     for i in range(len(scl)):
         tcl[i] = scl[i]
     
