@@ -9,7 +9,7 @@ if __name__ == "__main__":
 
     parser = argparse.ArgumentParser()
     parser.add_argument("bag",help = "ROS bag file to extract")
-    parser.add_argument("--imu_output_file",default="time_extracted_data",help="binary file to extract the imue data")
+    parser.add_argument("--imu_output_file",default="time_extracted_data",help="binary file to extract the imu data")
     args = parser.parse_args()
 
     path = args.bag
