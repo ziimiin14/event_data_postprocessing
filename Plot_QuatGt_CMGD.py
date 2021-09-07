@@ -195,9 +195,9 @@ print(z_max,z_min,y_max,y_min,x_max,x_min)
 # euler_y = euler[:,1]
 # euler_z = euler[:,2]
 
-plt.plot(quat_time[:],final_angle[:,0],color='orange')
+plt.plot(quat_time[:],final_angle[:,2],color='orange')
 plt.plot(quat_time[:],final_angle[:,1],color='r')
-plt.plot(quat_time[:],final_angle[:,2],color='b')
+plt.plot(quat_time[:],final_angle[:,0],color='b')
 # plt.plot(quat_time[:-1],angVel_x,color='r')
 # plt.plot(quat_time[:-1],angVel_y,color='b')
 # plt.plot(quat_time[:-1],angVel_z,color='orange')

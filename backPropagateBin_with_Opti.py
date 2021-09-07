@@ -16,11 +16,14 @@ K_arr = np.array(K)
 K_I_arr = np.array(K.I)
 
 # Load events data from bin file
-event = np.fromfile('../dvxplorer_data_set/event_data_05122021/bin_file/kratos_eventOnly_05122021_2.bin',dtype=np.uint16)
+# event = np.fromfile('../dvs240_data_set/eventStruct_09032021_fly/bin_file/kdvs240_Event_09032021.bin',dtype=np.uint16) ## if using dvxplorer
+event = np.fromfile('../dvs240_data_set/eventStruct_09032021_fly/bin_file/kdvs240_Event_09032021.bin',dtype=np.uint8)
+
 event = event.reshape(-1,3)
 
 # Load time data (event) from bin file
-time_sec = np.fromfile('../dvxplorer_data_set/event_data_05122021/bin_file/kratos_eventTime_05122021_2.bin',dtype=np.float64)
+# time_sec = np.fromfile('../dvxplorer_data_set/event_data_05122021/bin_file/kratos_eventTime_05122021_2.bin',dtype=np.float64)
+time_sec = np.fromfile('../dvs240_data_set/eventStruct_09032021_fly/bin_file/kdvs240_Time_09032021.bin',dtype=np.float32)
 time_sec = time_sec.reshape(-1,1) 
 time_interval = 1/100
 

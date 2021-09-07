@@ -30,8 +30,10 @@ if __name__ == "__main__":
             event.append(a)
         for b in msg.eventTime.data:
             time.append(b)
-        eventArr = np.array(event,dtype=np.uint8)
-        timeArr = np.array(time,dtype=np.int64)
+        # eventArr = np.array(event,dtype=np.uint16) ## if using dvxplorer
+        eventArr = np.array(event,dtype=np.uint8) ## if using dvs240
+        # timeArr = np.array(time,dtype=np.int64)
+        timeArr = np.array(time,dtype=np.float32)
         eventArr.tofile(output_filename)
         timeArr.tofile(output_filename1)
         event = []

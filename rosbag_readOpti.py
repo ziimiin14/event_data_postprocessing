@@ -19,12 +19,13 @@ if __name__ == "__main__":
 
     opti = []
 
-    for topic, msg, t in bag.read_messages(topics=['/vrpn_client_node/RigidBody007/pose']):
+    for topic, msg, t in bag.read_messages(topics=['/vrpn_client_node/zm_kratos_downward/pose']):
         opti.append(msg)
 
     pose_list =[]
     quat_list =[]
     time_list=[]
+
 
     for i in range(len(opti)):
         # pose_list.append([opti[i].pose.position.x,opti[i].pose.position.y,opti[i].pose.position.z])
